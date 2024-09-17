@@ -68,7 +68,9 @@
   function displayMessage(sender, message) {
     const messageContainer = document.createElement('div');
     messageContainer.classList.add('chat-widget-message');
-    messageContainer.classList.add(sender === 'user' ? 'chat-widget-message-user' : 'chat-widget-message-bot');
+    messageContainer.classList.add(
+      sender === 'user' ? 'chat-widget-message-user' : 'chat-widget-message-bot'
+    );
 
     const messageBubble = document.createElement('div');
     messageBubble.classList.add('chat-widget-bubble');
@@ -76,8 +78,25 @@
 
     messageContainer.appendChild(messageBubble);
     chatHistory.appendChild(messageContainer);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
+
+    // Allow time for rendering
+    setTimeout(() => {
+      const messageTop = messageContainer.offsetTop;
+      const messageHeight = messageContainer.offsetHeight;
+      const containerHeight = chatHistory.clientHeight;
+
+      // Calculate the scroll position to center the new message
+      const scrollPosition = messageTop - (containerHeight / 3);
+
+      // Scroll to the calculated position
+      chatHistory.scrollTo({
+        top: scrollPosition,
+        behavior: 'smooth',
+      });
+    }, 0);
   }
+
+
 
   // Function to send message
   function sendMessage() {

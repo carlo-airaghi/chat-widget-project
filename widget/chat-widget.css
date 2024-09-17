@@ -86,14 +86,20 @@
     font-family: 'BMWType', Arial, Helvetica, sans-serif;
   }
   
-  /* 7. Message Bubbles */
+  /* Message Container */
   .chat-widget-message {
-    margin-bottom: 10px;
-    clear: both;
+    display: flex;
+    justify-content: flex-start; /* Default alignment for bot messages */
+    margin: 10px 0;              /* Vertical margin between messages */
   }
-  
+
+  /* User Message Alignment */
+  .chat-widget-message-user {
+    justify-content: flex-end;   /* Align user messages to the right */
+  }
+
+  /* Message Bubble */
   .chat-widget-bubble {
-    display: inline-block;
     padding: 10px;
     border-radius: 10px;
     max-width: 80%;
@@ -101,18 +107,17 @@
     font-size: 14px;
     font-family: 'BMWType', Arial, Helvetica, sans-serif;
   }
-  
+
+  /* User Message Bubble */
   .chat-widget-message-user .chat-widget-bubble {
-    background-color: #0066B1; /* BMW Blue */
-    color: #FFFFFF; /* White text */
-    float: right;
+    background-color: #0066B1;   /* BMW Blue */
+    color: #FFFFFF;              /* White text */
     text-align: right;
   }
-  
+
+  /* Bot Message Bubble */
   .chat-widget-message-bot .chat-widget-bubble {
-    background-color: #E9E9EB; /* Light gray */
-    color: #000000; /* Black text */
-    float: left;
+    background-color: #E9E9EB;   /* Light gray */
+    color: #000000;              /* Black text */
     text-align: left;
   }
-  
