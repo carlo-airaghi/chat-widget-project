@@ -199,8 +199,18 @@
 
     // Allow time for rendering
     setTimeout(() => {
-      // Scroll to the bottom of chat history
-      chatHistory.scrollTop = chatHistory.scrollHeight;
+      const messageTop = messageContainer.offsetTop;
+      const messageHeight = messageContainer.offsetHeight;
+      const containerHeight = chatHistory.clientHeight;
+
+      // Calculate the scroll position to center the new message
+      const scrollPosition = messageTop - (containerHeight / 3);
+
+      // Scroll to the calculated position
+      chatHistory.scrollTo({
+        top: scrollPosition,
+        behavior: 'smooth',
+      });
     }, 0);
   }
 
