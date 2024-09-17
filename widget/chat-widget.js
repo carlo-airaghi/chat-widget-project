@@ -4,6 +4,25 @@
   // Configuration
   const apiUrl = 'http://127.0.0.1:5000/chat'; // Update with your backend URL
 
+  // Flags to track the chat and privacy state
+  let isChatOpen = false;
+  let isPrivacyAccepted = false;
+
+  // Create the minimized chat icon
+  const chatIcon = document.createElement('div');
+  chatIcon.id = 'chat-widget-icon';
+  chatIcon.title = 'Open Chat';
+
+  // Create an image element for the chat icon
+  const chatIconImg = document.createElement('img');
+  chatIconImg.id = 'chat-widget-icon-img';
+  chatIconImg.src = 'BMW_chat_icon.png'; // Ensure the path is correct
+  chatIconImg.alt = 'Open Chat';
+  chatIcon.appendChild(chatIconImg);
+
+  // Append the icon to the body
+  document.body.appendChild(chatIcon);
+
   // Create the chat widget container
   const widgetContainer = document.createElement('div');
   widgetContainer.id = 'chat-widget-container';
@@ -18,16 +37,28 @@
   logoImg.src = 'BMW_logo.png'; // Ensure the path is correct
   logoImg.alt = 'BMW Logo';
 
-  // Add the logo to the header
-  header.appendChild(logoImg);
-
   // Add the header text
   const headerText = document.createElement('span');
   headerText.id = 'chat-widget-header-text';
-  headerText.innerText = 'BMW Chat Assistant';
+  headerText.innerText = 'Virtual Assistant';
 
-  // Add the header text to the header
+  // Add the minimize button
+  const minimizeButton = document.createElement('img');
+  minimizeButton.id = 'chat-widget-minimize-button';
+  minimizeButton.src = 'BMW_arrow_down.png'; // Ensure the path is correct
+  minimizeButton.alt = 'Minimize Chat';
+
+  // Add the close button
+  const closeButton = document.createElement('img');
+  closeButton.id = 'chat-widget-close-button';
+  closeButton.src = 'BMW_close.png'; // Ensure the path is correct
+  closeButton.alt = 'Close Chat';
+
+  // Append elements to the header in order
+  header.appendChild(logoImg); // Leftmost
   header.appendChild(headerText);
+  header.appendChild(minimizeButton);
+  header.appendChild(closeButton);
 
   // Add the header to the widget container
   widgetContainer.appendChild(header);
@@ -47,14 +78,41 @@
   inputField.id = 'chat-widget-input';
   inputContainer.appendChild(inputField);
 
-  const sendButton = document.createElement('button');
-  sendButton.id = 'chat-widget-send-button';
-  sendButton.innerText = 'Send';
-  inputContainer.appendChild(sendButton);
-
   widgetContainer.appendChild(inputContainer);
 
-  // Append the widget to the body
+  // Privacy Overlay
+  const privacyOverlay = document.createElement('div');
+  privacyOverlay.id = 'chat-widget-privacy-overlay';
+
+  // Privacy Content Container
+  const privacyContent = document.createElement('div');
+  privacyContent.id = 'chat-widget-privacy-content';
+
+  // Privacy Text
+  const privacyText = document.createElement('p');
+  privacyText.id = 'chat-widget-privacy-text';
+  privacyText.innerHTML =
+    '<strong>Privacy Notice:</strong><br>' +
+    'We value your privacy. The information you provide during this chat session will be used solely to assist you and improve our services. We do not share your personal data with third parties without your consent. For more details on how we handle your data, please read our <a href="your-privacy-policy-link" target="_blank">Privacy Policy</a>.<br><br>' +
+    '<strong>Important Notice:</strong><br>' +
+    'Our Virtual Assistant uses artificial intelligence to provide responses. While we strive for accuracy, the AI may occasionally provide incorrect or suboptimal information. Please verify any critical or sensitive information with official BMW sources or contact our customer support directly.<br><br>' +
+    'By clicking "Accept," you acknowledge that you have read and agree to our Privacy Policy and understand the limitations of the AI assistant.';
+
+  // Accept Button
+  const acceptButton = document.createElement('button');
+  acceptButton.id = 'chat-widget-privacy-accept-button';
+  acceptButton.innerText = 'Accept';
+
+  // Append elements
+  privacyContent.appendChild(privacyText);
+  privacyContent.appendChild(acceptButton);
+  privacyOverlay.appendChild(privacyContent);
+
+  // Append the privacy overlay to the widget container
+  widgetContainer.appendChild(privacyOverlay);
+
+  // Append the widget to the body (initially hidden)
+  widgetContainer.style.display = 'none';
   document.body.appendChild(widgetContainer);
 
   // Include CSS file
@@ -63,6 +121,66 @@
   link.type = 'text/css';
   link.href = 'chat-widget.css'; // Ensure the path is correct
   document.head.appendChild(link);
+
+  // Disable input field initially
+  inputField.disabled = true;
+
+  // Function to open the chat
+  function openChat() {
+    isChatOpen = true;
+    widgetContainer.style.display = 'flex';
+    chatIcon.style.display = 'none';
+
+    // Ensure chat components are visible
+    chatHistory.style.display = 'flex';
+    inputContainer.style.display = 'flex';
+
+    if (!isPrivacyAccepted) {
+      // Show the privacy overlay
+      privacyOverlay.style.display = 'flex';
+      // Disable the input field
+      inputField.disabled = true;
+    } else {
+      // Hide the privacy overlay
+      privacyOverlay.style.display = 'none';
+      // Enable the input field
+      inputField.disabled = false;
+    }
+  }
+
+  // Function to minimize the chat
+  function minimizeChat() {
+    isChatOpen = false;
+    widgetContainer.style.display = 'none';
+    chatIcon.style.display = 'flex'; // Use 'flex' instead of 'block'
+  }
+
+  // Function to close and clear the chat
+  function closeChat() {
+    isChatOpen = false;
+    widgetContainer.style.display = 'none';
+    chatIcon.style.display = 'flex'; // Use 'flex' instead of 'block'
+    // Clear the chat history
+    chatHistory.innerHTML = '';
+  }
+
+  // Event listener for chat icon
+  chatIcon.addEventListener('click', openChat);
+
+  // Event listeners for minimize and close buttons
+  minimizeButton.addEventListener('click', minimizeChat);
+  closeButton.addEventListener('click', closeChat);
+
+  // Event listener for accept button
+  acceptButton.addEventListener('click', function () {
+    isPrivacyAccepted = true;
+    // Hide the privacy overlay
+    privacyOverlay.style.display = 'none';
+    // Enable the input field
+    inputField.disabled = false;
+    // Focus on the input field
+    inputField.focus();
+  });
 
   // Function to display messages
   function displayMessage(sender, message) {
@@ -81,22 +199,10 @@
 
     // Allow time for rendering
     setTimeout(() => {
-      const messageTop = messageContainer.offsetTop;
-      const messageHeight = messageContainer.offsetHeight;
-      const containerHeight = chatHistory.clientHeight;
-
-      // Calculate the scroll position to center the new message
-      const scrollPosition = messageTop - (containerHeight / 3);
-
-      // Scroll to the calculated position
-      chatHistory.scrollTo({
-        top: scrollPosition,
-        behavior: 'smooth',
-      });
+      // Scroll to the bottom of chat history
+      chatHistory.scrollTop = chatHistory.scrollHeight;
     }, 0);
   }
-
-
 
   // Function to send message
   function sendMessage() {
@@ -124,14 +230,20 @@
       })
       .catch((error) => {
         console.error('Error:', error);
-        displayMessage('bot', 'Sorry, there was an error. Please try again later.');
+        displayMessage(
+          'bot',
+          'Sorry, there was an error. Please try again later.'
+        );
       });
   }
 
-  // Event listeners
-  sendButton.addEventListener('click', sendMessage);
+  // Event listener for input field
   inputField.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
+      if (!isPrivacyAccepted) {
+        // Do not allow sending messages until terms are accepted
+        return;
+      }
       sendMessage();
     }
   });

@@ -2,122 +2,202 @@
 
 /* 1. Include the custom font */
 @font-face {
-    font-family: 'BMWType';
-    src: url('bmwlt.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-  }
-  
-  /* 2. Reset some default styles */
-  #chat-widget-container * {
-    box-sizing: border-box;
-  }
-  
-  /* 3. Widget Container */
-  #chat-widget-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 350px;
-    height: 500px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    background-color: #FFFFFF; /* White background */
-    display: flex;
-    flex-direction: column;
-    z-index: 9999;
-    font-family: 'BMWType', Arial, Helvetica, sans-serif; /* Use custom font */
-  }
-  
+  font-family: 'BMWType';
+  src: url('bmwlt.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* 2. Reset some default styles */
+#chat-widget-container * {
+  box-sizing: border-box;
+}
+
+/* 3. Widget Container */
+#chat-widget-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 350px;
+  height: 500px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background-color: #FFFFFF; /* White background */
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  font-family: 'BMWType', Arial, Helvetica, sans-serif; /* Use custom font */
+}
+
 /* 4. Header */
 #chat-widget-header {
-    padding: 10px;
-    background-color: #1E1E1E; /* BMW Blue */
-    color: #FFFFFF; /* White text */
-    display: flex; /* Use flexbox for alignment */
-    align-items: center;
-    justify-content: center;
-  }
-  
-  #chat-widget-logo {
-    height: 50px; /* Adjust the height as needed */
-    width: auto;
-    margin-right: 10px; /* Space between logo and text */
-  }
-  
-  #chat-widget-header-text {
-    font-weight: bold;
-    font-size: 18px;
-    color: #FFFFFF;
-  }
-  
-  /* 5. Chat History */
-  #chat-widget-history {
-    flex: 1;
-    padding: 10px;
-    overflow-y: auto;
-    background-color: #F5F5F5; /* Light gray background */
-  }
-  
-  /* 6. Input Container */
-  #chat-widget-input-container {
-    display: flex;
-    border-top: 1px solid #ccc;
-  }
-  
-  #chat-widget-input {
-    flex: 1;
-    border: none;
-    padding: 10px;
-    font-size: 16px;
-    outline: none;
-    font-family: 'BMWType', Arial, Helvetica, sans-serif;
-  }
-  
-  #chat-widget-send-button {
-    border: none;
-    padding: 10px 20px;
-    background-color: #1E1E1E; 
-    color: #FFFFFF; 
-    cursor: pointer;
-    font-size: 16px;
-    font-family: 'BMWType', Arial, Helvetica, sans-serif;
-  }
-  
-  /* Message Container */
-  .chat-widget-message {
-    display: flex;
-    justify-content: flex-start; /* Default alignment for bot messages */
-    margin: 10px 0;              /* Vertical margin between messages */
-  }
+  padding: 10px;
+  background-color: #1E1E1E; /* BMW Dark Grey */
+  color: #FFFFFF; /* White text */
+  display: flex;
+  align-items: center;
+}
 
-  /* User Message Alignment */
-  .chat-widget-message-user {
-    justify-content: flex-end;   /* Align user messages to the right */
-  }
+#chat-widget-logo {
+  height: 35px;
+  width: auto;
+  margin-right: 10px;
+}
 
-  /* Message Bubble */
-  .chat-widget-bubble {
-    padding: 10px;
-    border-radius: 10px;
-    max-width: 80%;
-    word-wrap: break-word;
-    font-size: 14px;
-    font-family: 'BMWType', Arial, Helvetica, sans-serif;
-  }
+#chat-widget-header-text {
+  font-weight: bold;
+  font-size: 18px;
+  color: #FFFFFF;
+  flex-grow: 1;
+}
 
-  /* User Message Bubble */
-  .chat-widget-message-user .chat-widget-bubble {
-    background-color: #0066B1;   /* BMW Blue */
-    color: #FFFFFF;              /* White text */
-    text-align: right;
-  }
+#chat-widget-header-text,
+#chat-widget-logo {
+  display: flex;
+  align-items: center;
+}
 
-  /* Bot Message Bubble */
-  .chat-widget-message-bot .chat-widget-bubble {
-    background-color: #E9E9EB;   /* Light gray */
-    color: #000000;              /* Black text */
-    text-align: left;
-  }
+/* Minimize and Close Buttons */
+#chat-widget-minimize-button,
+#chat-widget-close-button {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+#chat-widget-close-button {
+  margin-left: auto;
+}
+
+#chat-widget-minimize-button:hover,
+#chat-widget-close-button:hover {
+  opacity: 0.8;
+}
+
+/* 5. Chat History */
+#chat-widget-history {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  background-color: #F5F5F5;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 6. Input Container */
+#chat-widget-input-container {
+  display: flex;
+  border-top: 1px solid #ccc;
+}
+
+#chat-widget-input {
+  flex: 1;
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+  outline: none;
+  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+}
+
+/* Message Container */
+.chat-widget-message {
+  display: flex;
+  justify-content: flex-start;
+  margin: 10px 0;
+}
+
+.chat-widget-message-user {
+  justify-content: flex-end;
+}
+
+.chat-widget-bubble {
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 80%;
+  word-wrap: break-word;
+  font-size: 14px;
+  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+}
+
+.chat-widget-message-user .chat-widget-bubble {
+  background-color: #0066B1;
+  color: #FFFFFF;
+  text-align: right;
+}
+
+.chat-widget-message-bot .chat-widget-bubble {
+  background-color: #E9E9EB;
+  color: #000000;
+  text-align: left;
+}
+
+/* Privacy Overlay */
+#chat-widget-privacy-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #FFFFFF; /* Solid white background */
+  display: none; /* Hidden by default */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Above other elements in the widget */
+}
+
+/* Privacy Content */
+#chat-widget-privacy-content {
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+  text-align: left;
+  padding: 20px;
+}
+
+#chat-widget-privacy-text {
+  font-size: 14px;
+  color: #000000;
+  margin-bottom: 20px;
+  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+}
+
+#chat-widget-privacy-accept-button {
+  background-color: #0066B1;
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+}
+
+#chat-widget-privacy-accept-button:hover {
+  background-color: #005494;
+}
+
+/* 8. Chat Icon (Minimized State) */
+#chat-widget-icon {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background-color: #1E1E1E;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#chat-widget-icon-img {
+  width: 75%;
+  height: 75%;
+  object-fit: contain;
+}
