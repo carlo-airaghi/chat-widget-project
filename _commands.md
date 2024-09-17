@@ -58,3 +58,15 @@ To embed the widget in a website, add the following script tag to the HTML of th
 ```bash
 node server.js
 ```
+
+## Dockerization
+```bash
+docker build -t chat-widget-app .
+```
+```bash
+docker run -d -p 5000:5000 \
+  --env-file .env \
+  --name chat-widget-container \
+  chat-widget-app
+
+```
