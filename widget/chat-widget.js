@@ -11,13 +11,13 @@
   // Create the minimized chat icon
   const chatIcon = document.createElement('div');
   chatIcon.id = 'chat-widget-icon';
-  chatIcon.title = 'Open Chat';
+  chatIcon.title = 'Apri Chat';
 
   // Create an image element for the chat icon
   const chatIconImg = document.createElement('img');
   chatIconImg.id = 'chat-widget-icon-img';
   chatIconImg.src = 'BMW_chat_icon.png'; // Ensure the path is correct
-  chatIconImg.alt = 'Open Chat';
+  chatIconImg.alt = 'Apri Chat';
   chatIcon.appendChild(chatIconImg);
 
   // Append the icon to the body
@@ -40,19 +40,19 @@
   // Add the header text
   const headerText = document.createElement('span');
   headerText.id = 'chat-widget-header-text';
-  headerText.innerText = 'Virtual Assistant';
+  headerText.innerText = 'Assistente Virtuale';
 
   // Add the minimize button
   const minimizeButton = document.createElement('img');
   minimizeButton.id = 'chat-widget-minimize-button';
   minimizeButton.src = 'BMW_arrow_down.png'; // Ensure the path is correct
-  minimizeButton.alt = 'Minimize Chat';
+  minimizeButton.alt = 'Minimizza Chat';
 
   // Add the close button
   const closeButton = document.createElement('img');
   closeButton.id = 'chat-widget-close-button';
   closeButton.src = 'BMW_close.png'; // Ensure the path is correct
-  closeButton.alt = 'Close Chat';
+  closeButton.alt = 'Chiudi Chat';
 
   // Append elements to the header in order
   header.appendChild(logoImg); // Leftmost
@@ -63,10 +63,14 @@
   // Add the header to the widget container
   widgetContainer.appendChild(header);
 
+  // Main content area (used to switch between chat, privacy form, and survey)
+  const mainContent = document.createElement('div');
+  mainContent.id = 'chat-widget-main-content';
+
   // Chat history
   const chatHistory = document.createElement('div');
   chatHistory.id = 'chat-widget-history';
-  widgetContainer.appendChild(chatHistory);
+  mainContent.appendChild(chatHistory);
 
   // Input container
   const inputContainer = document.createElement('div');
@@ -74,42 +78,45 @@
 
   const inputField = document.createElement('input');
   inputField.type = 'text';
-  inputField.placeholder = 'Type a message...';
+  inputField.placeholder = 'Scrivi un messaggio...';
   inputField.id = 'chat-widget-input';
   inputContainer.appendChild(inputField);
 
-  widgetContainer.appendChild(inputContainer);
+  mainContent.appendChild(inputContainer);
 
-  // Privacy Overlay
-  const privacyOverlay = document.createElement('div');
-  privacyOverlay.id = 'chat-widget-privacy-overlay';
+  // Append the main content to the widget container
+  widgetContainer.appendChild(mainContent);
 
-  // Privacy Content Container
-  const privacyContent = document.createElement('div');
-  privacyContent.id = 'chat-widget-privacy-content';
+  // Privacy Form Container
+  const privacyContainer = document.createElement('div');
+  privacyContainer.id = 'chat-widget-privacy-container';
+
+  // Privacy Title
+  const privacyTitle = document.createElement('h2');
+  privacyTitle.id = 'chat-widget-privacy-title';
+  privacyTitle.innerText = 'Informativa sulla Privacy';
 
   // Privacy Text
   const privacyText = document.createElement('p');
   privacyText.id = 'chat-widget-privacy-text';
   privacyText.innerHTML =
-    '<strong>Privacy Notice:</strong><br>' +
-    'We value your privacy. The information you provide during this chat session will be used solely to assist you and improve our services. We do not share your personal data with third parties without your consent. For more details on how we handle your data, please read our <a href="your-privacy-policy-link" target="_blank">Privacy Policy</a>.<br><br>' +
-    '<strong>Important Notice:</strong><br>' +
-    'Our Virtual Assistant uses artificial intelligence to provide responses. While we strive for accuracy, the AI may occasionally provide incorrect or suboptimal information. Please verify any critical or sensitive information with official BMW sources or contact our customer support directly.<br><br>' +
-    'By clicking "Accept," you acknowledge that you have read and agree to our Privacy Policy and understand the limitations of the AI assistant.';
+    'Le informazioni che fornirai durante questa sessione di chat saranno utilizzate esclusivamente per assisterti e migliorare i nostri servizi. Non condividiamo i tuoi dati personali con terze parti senza il tuo consenso. Per maggiori dettagli su come gestiamo i tuoi dati, ti preghiamo di leggere la nostra <a href="your-privacy-policy-link" target="_blank">Informativa sulla Privacy</a>.<br><br>' +
+    '<strong>Avviso Importante:</strong><br>' +
+    "Il nostro Assistente Virtuale utilizza l'intelligenza artificiale per fornire risposte. Sebbene ci impegniamo per garantire l'accuratezza, l'AI potrebbe occasionalmente fornire informazioni inesatte o subottimali. Ti preghiamo di verificare informazioni critiche o sensibili con fonti ufficiali BMW o contattando direttamente il nostro servizio clienti.<br><br>" +
+    'Cliccando su "Accetto", confermi di aver letto e accettato la nostra Informativa sulla Privacy e di comprendere le limitazioni dell\'Assistente Virtuale.';
 
   // Accept Button
   const acceptButton = document.createElement('button');
   acceptButton.id = 'chat-widget-privacy-accept-button';
-  acceptButton.innerText = 'Accept';
+  acceptButton.innerText = 'Accetto';
 
   // Append elements
-  privacyContent.appendChild(privacyText);
-  privacyContent.appendChild(acceptButton);
-  privacyOverlay.appendChild(privacyContent);
+  privacyContainer.appendChild(privacyTitle);
+  privacyContainer.appendChild(privacyText);
+  privacyContainer.appendChild(acceptButton);
 
-  // Append the privacy overlay to the widget container
-  widgetContainer.appendChild(privacyOverlay);
+  // Append the privacy container to the main content
+  mainContent.appendChild(privacyContainer);
 
   // Append the widget to the body (initially hidden)
   widgetContainer.style.display = 'none';
@@ -131,19 +138,16 @@
     widgetContainer.style.display = 'flex';
     chatIcon.style.display = 'none';
 
-    // Ensure chat components are visible
-    chatHistory.style.display = 'flex';
-    inputContainer.style.display = 'flex';
-
     if (!isPrivacyAccepted) {
-      // Show the privacy overlay
-      privacyOverlay.style.display = 'flex';
-      // Disable the input field
-      inputField.disabled = true;
+      // Show the privacy form
+      privacyContainer.style.display = 'flex';
+      chatHistory.style.display = 'none';
+      inputContainer.style.display = 'none';
     } else {
-      // Hide the privacy overlay
-      privacyOverlay.style.display = 'none';
-      // Enable the input field
+      // Show the chat components
+      privacyContainer.style.display = 'none';
+      chatHistory.style.display = 'flex';
+      inputContainer.style.display = 'flex';
       inputField.disabled = false;
     }
   }
@@ -152,16 +156,19 @@
   function minimizeChat() {
     isChatOpen = false;
     widgetContainer.style.display = 'none';
-    chatIcon.style.display = 'flex'; // Use 'flex' instead of 'block'
+    chatIcon.style.display = 'flex';
   }
 
-  // Function to close and clear the chat
+  // Function to close and clear the chat, then show the survey
   function closeChat() {
     isChatOpen = false;
-    widgetContainer.style.display = 'none';
-    chatIcon.style.display = 'flex'; // Use 'flex' instead of 'block'
-    // Clear the chat history
+
+    // Clear the chat history and input
     chatHistory.innerHTML = '';
+    inputField.value = '';
+
+    // Show the survey within the chat widget
+    showSurvey();
   }
 
   // Event listener for chat icon
@@ -174,15 +181,18 @@
   // Event listener for accept button
   acceptButton.addEventListener('click', function () {
     isPrivacyAccepted = true;
-    // Hide the privacy overlay
-    privacyOverlay.style.display = 'none';
+    // Hide the privacy container
+    privacyContainer.style.display = 'none';
+    // Show chat components
+    chatHistory.style.display = 'flex';
+    inputContainer.style.display = 'flex';
     // Enable the input field
     inputField.disabled = false;
     // Focus on the input field
     inputField.focus();
   });
 
-  // Function to display messages
+  // Function to display messages with improved scroll management
   function displayMessage(sender, message) {
     const messageContainer = document.createElement('div');
     messageContainer.classList.add('chat-widget-message');
@@ -200,15 +210,11 @@
     // Allow time for rendering
     setTimeout(() => {
       const messageTop = messageContainer.offsetTop;
-      const messageHeight = messageContainer.offsetHeight;
       const containerHeight = chatHistory.clientHeight;
 
-      // Calculate the scroll position to center the new message
-      const scrollPosition = messageTop - (containerHeight / 3);
-
-      // Scroll to the calculated position
+      // Scroll to the new message smoothly
       chatHistory.scrollTo({
-        top: scrollPosition,
+        top: messageTop - containerHeight / 3,
         behavior: 'smooth',
       });
     }, 0);
@@ -235,14 +241,14 @@
         if (data.reply) {
           displayMessage('bot', data.reply);
         } else {
-          displayMessage('bot', 'Sorry, something went wrong.');
+          displayMessage('bot', 'Spiacenti, si è verificato un errore.');
         }
       })
       .catch((error) => {
         console.error('Error:', error);
         displayMessage(
           'bot',
-          'Sorry, there was an error. Please try again later.'
+          'Spiacenti, si è verificato un errore. Per favore riprova più tardi.'
         );
       });
   }
@@ -257,4 +263,142 @@
       sendMessage();
     }
   });
+
+  // Function to show the survey within the chat widget
+  function showSurvey() {
+    // Show the chat widget
+    widgetContainer.style.display = 'flex';
+    chatIcon.style.display = 'none';
+
+    // Clear the chat history and hide input container
+    chatHistory.innerHTML = '';
+    chatHistory.style.display = 'none';
+    inputContainer.style.display = 'none';
+
+    // Create the survey container
+    const surveyContainer = document.createElement('div');
+    surveyContainer.id = 'chat-widget-survey-container';
+
+    // **Removed the survey title**
+
+    // Survey Text
+    const surveyText = document.createElement('p');
+    surveyText.id = 'chat-widget-survey-text';
+    surveyText.innerHTML =
+      'Il tuo feedback è importante per noi.<br>' +
+      'Ti ringraziamo in anticipo se vorrai dedicarci qualche minuto del tuo tempo.<br><br>' +
+      'La tua richiesta è stata risolta con un solo contatto?';
+
+    // Survey Options
+    const surveyOptions = document.createElement('div');
+    surveyOptions.id = 'chat-widget-survey-options';
+
+    const option1 = createSurveyOption('Si');
+    const option2 = createSurveyOption(
+      'Sono stato informato sui tempi di gestione della mia richiesta'
+    );
+    const option3 = createSurveyOption('No');
+
+    surveyOptions.appendChild(option1);
+    surveyOptions.appendChild(option2);
+    surveyOptions.appendChild(option3);
+
+    // Second Question
+    const surveyText2 = document.createElement('p');
+    surveyText2.id = 'chat-widget-survey-text2';
+    surveyText2.innerHTML =
+      'Dopo questa tua esperienza quanto raccomanderesti BMW Financial Services a amici e colleghi, in una scala da 0 a 10?';
+
+    // Rating Slider
+    const ratingContainer = document.createElement('div');
+    ratingContainer.id = 'chat-widget-rating-container';
+
+    const ratingInput = document.createElement('input');
+    ratingInput.type = 'range';
+    ratingInput.min = '0';
+    ratingInput.max = '10';
+    ratingInput.value = '5';
+    ratingInput.id = 'chat-widget-rating-input';
+
+    const ratingValue = document.createElement('span');
+    ratingValue.id = 'chat-widget-rating-value';
+    ratingValue.innerText = '5';
+
+    ratingInput.addEventListener('input', function () {
+      ratingValue.innerText = ratingInput.value;
+    });
+
+    ratingContainer.appendChild(ratingInput);
+    ratingContainer.appendChild(ratingValue);
+
+    // Final Question
+    const surveyText3 = document.createElement('p');
+    surveyText3.id = 'chat-widget-survey-text3';
+    surveyText3.innerText =
+      'Infine, per consentirci di migliorare la qualità del servizio, ti chiediamo di fornirci un tuo commento.';
+
+    // Comments Textarea
+    const commentsTextarea = document.createElement('textarea');
+    commentsTextarea.id = 'chat-widget-comments-textarea';
+    commentsTextarea.placeholder = 'Scrivi il tuo commento qui...';
+
+    // Submit Button
+    const submitButton = document.createElement('button');
+    submitButton.id = 'chat-widget-survey-submit-button';
+    submitButton.innerText = 'Invia';
+
+    // Append elements to the survey container
+    // **Note: Survey title is not added**
+    surveyContainer.appendChild(surveyText);
+    surveyContainer.appendChild(surveyOptions);
+    surveyContainer.appendChild(surveyText2);
+    surveyContainer.appendChild(ratingContainer);
+    surveyContainer.appendChild(surveyText3);
+    surveyContainer.appendChild(commentsTextarea);
+    surveyContainer.appendChild(submitButton);
+
+    // Append the survey container to the main content
+    mainContent.appendChild(surveyContainer);
+
+    // Event listener for submit button
+    submitButton.addEventListener('click', function () {
+      // Collect survey data
+      const selectedOptions = Array.from(
+        surveyOptions.querySelectorAll('.chat-widget-survey-option input:checked')
+      ).map((input) => input.value);
+
+      const rating = ratingInput.value;
+      const comments = commentsTextarea.value.trim();
+
+      // Here, you can send the survey data to your server if needed
+
+      // Close the chat widget
+      widgetContainer.style.display = 'none';
+      chatIcon.style.display = 'flex';
+
+      // Reset the chat widget for next use
+      surveyContainer.remove();
+      chatHistory.innerHTML = '';
+      inputContainer.style.display = 'flex';
+      chatHistory.style.display = 'flex';
+    });
+  }
+
+  // Helper function to create survey options
+  function createSurveyOption(labelText) {
+    const optionLabel = document.createElement('label');
+    optionLabel.classList.add('chat-widget-survey-option');
+
+    const optionInput = document.createElement('input');
+    optionInput.type = 'checkbox';
+    optionInput.value = labelText;
+
+    const optionSpan = document.createElement('span');
+    optionSpan.innerText = labelText;
+
+    optionLabel.appendChild(optionInput);
+    optionLabel.appendChild(optionSpan);
+
+    return optionLabel;
+  }
 })();
