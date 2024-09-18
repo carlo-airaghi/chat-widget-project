@@ -212,8 +212,6 @@
   overflow-y: auto;
 }
 
-/* Removed the survey title styling as the title is removed */
-
 /* Adjusted text dimensions for coherence */
 #chat-widget-survey-text,
 #chat-widget-survey-text2,
@@ -239,6 +237,11 @@
   margin-right: 10px;
 }
 
+.chat-widget-survey-option span {
+  font-size: 14px; /* Match the rest of the ACS text */
+  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+}
+
 #chat-widget-rating-container {
   display: flex;
   align-items: center;
@@ -257,14 +260,13 @@
 
 #chat-widget-comments-textarea {
   width: 100%;
-  height: 80px;
+  min-height: 80px;
   padding: 10px;
   font-size: 14px;
   font-family: 'BMWType', Arial, Helvetica, sans-serif;
   margin-bottom: 10px; /* Adjusted margin */
   border: 1px solid #ccc;
   border-radius: 5px;
-  resize: none;
 }
 
 #chat-widget-survey-submit-button {

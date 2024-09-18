@@ -7,6 +7,8 @@
   // Flags to track the chat and privacy state
   let isChatOpen = false;
   let isPrivacyAccepted = false;
+  let isChatStarted = false; // New flag to track if the chat has started
+  let isSurveyOpen = false; // New flag to track if the survey is open
 
   // Create the minimized chat icon
   const chatIcon = document.createElement('div');
@@ -159,16 +161,46 @@
     chatIcon.style.display = 'flex';
   }
 
-  // Function to close and clear the chat, then show the survey
+  // Function to close and clear the chat, then conditionally show the survey
   function closeChat() {
     isChatOpen = false;
 
-    // Clear the chat history and input
-    chatHistory.innerHTML = '';
-    inputField.value = '';
+    if (isSurveyOpen) {
+      // If the survey is already open, just close the widget
+      widgetContainer.style.display = 'none';
+      chatIcon.style.display = 'flex';
+      isSurveyOpen = false; // Reset the flag
 
-    // Show the survey within the chat widget
-    showSurvey();
+      // Remove the survey container if it exists
+      const surveyContainer = document.getElementById('chat-widget-survey-container');
+      if (surveyContainer) {
+        surveyContainer.remove();
+      }
+
+      // Reset the chat for next use
+      chatHistory.innerHTML = '';
+      inputField.value = '';
+      isChatStarted = false;
+    } else if (isChatStarted) {
+      // If the chat has started, show the survey
+      // Clear the chat history and input
+      chatHistory.innerHTML = '';
+      inputField.value = '';
+
+      // Show the survey within the chat widget
+      showSurvey();
+    } else {
+      // If the chat hasn't started, just close the widget
+      widgetContainer.style.display = 'none';
+      chatIcon.style.display = 'flex';
+
+      // Reset the chat for next use
+      chatHistory.innerHTML = '';
+      inputField.value = '';
+      privacyContainer.style.display = 'none';
+      chatHistory.style.display = 'flex';
+      inputContainer.style.display = 'flex';
+    }
   }
 
   // Event listener for chat icon
@@ -228,6 +260,9 @@
     displayMessage('user', message);
     inputField.value = '';
 
+    // Mark the chat as started
+    isChatStarted = true;
+
     // Send the message to the backend server
     fetch(apiUrl, {
       method: 'POST',
@@ -266,6 +301,8 @@
 
   // Function to show the survey within the chat widget
   function showSurvey() {
+    isSurveyOpen = true;
+
     // Show the chat widget
     widgetContainer.style.display = 'flex';
     chatIcon.style.display = 'none';
@@ -279,8 +316,6 @@
     const surveyContainer = document.createElement('div');
     surveyContainer.id = 'chat-widget-survey-container';
 
-    // **Removed the survey title**
-
     // Survey Text
     const surveyText = document.createElement('p');
     surveyText.id = 'chat-widget-survey-text';
@@ -293,11 +328,13 @@
     const surveyOptions = document.createElement('div');
     surveyOptions.id = 'chat-widget-survey-options';
 
-    const option1 = createSurveyOption('Si');
+    const option1 = createSurveyOption('Sì', 'survey-option', true); // Radio button
     const option2 = createSurveyOption(
-      'Sono stato informato sui tempi di gestione della mia richiesta'
+      'Sono stato informato sui tempi di gestione della mia richiesta',
+      'survey-option',
+      true
     );
-    const option3 = createSurveyOption('No');
+    const option3 = createSurveyOption('No', 'survey-option', true);
 
     surveyOptions.appendChild(option1);
     surveyOptions.appendChild(option2);
@@ -307,7 +344,7 @@
     const surveyText2 = document.createElement('p');
     surveyText2.id = 'chat-widget-survey-text2';
     surveyText2.innerHTML =
-      'Dopo questa tua esperienza quanto raccomanderesti BMW Financial Services a amici e colleghi, in una scala da 0 a 10?';
+      'Dopo questa tua esperienza, quanto raccomanderesti BMW Financial Services ad amici e colleghi, in una scala da 0 a 10?';
 
     // Rating Slider
     const ratingContainer = document.createElement('div');
@@ -317,12 +354,12 @@
     ratingInput.type = 'range';
     ratingInput.min = '0';
     ratingInput.max = '10';
-    ratingInput.value = '5';
+    ratingInput.step = '1'; // Ensure integer values
     ratingInput.id = 'chat-widget-rating-input';
 
     const ratingValue = document.createElement('span');
     ratingValue.id = 'chat-widget-rating-value';
-    ratingValue.innerText = '5';
+    ratingValue.innerText = ''; // Start with no value
 
     ratingInput.addEventListener('input', function () {
       ratingValue.innerText = ratingInput.value;
@@ -342,13 +379,23 @@
     commentsTextarea.id = 'chat-widget-comments-textarea';
     commentsTextarea.placeholder = 'Scrivi il tuo commento qui...';
 
+    // Apply inline styles to ensure the textarea displays multiple lines
+    commentsTextarea.style.width = '100%';
+    commentsTextarea.style.height = '120px'; // Set desired height
+    commentsTextarea.style.padding = '10px';
+    commentsTextarea.style.fontSize = '14px';
+    commentsTextarea.style.fontFamily = '"BMWType", Arial, Helvetica, sans-serif';
+    commentsTextarea.style.marginBottom = '10px';
+    commentsTextarea.style.border = '1px solid #ccc';
+    commentsTextarea.style.borderRadius = '5px';
+    commentsTextarea.style.resize = 'vertical';
+
     // Submit Button
     const submitButton = document.createElement('button');
     submitButton.id = 'chat-widget-survey-submit-button';
     submitButton.innerText = 'Invia';
 
     // Append elements to the survey container
-    // **Note: Survey title is not added**
     surveyContainer.appendChild(surveyText);
     surveyContainer.appendChild(surveyOptions);
     surveyContainer.appendChild(surveyText2);
@@ -363,11 +410,11 @@
     // Event listener for submit button
     submitButton.addEventListener('click', function () {
       // Collect survey data
-      const selectedOptions = Array.from(
-        surveyOptions.querySelectorAll('.chat-widget-survey-option input:checked')
-      ).map((input) => input.value);
+      const selectedOption = surveyOptions.querySelector(
+        '.chat-widget-survey-option input:checked'
+      )?.value;
 
-      const rating = ratingInput.value;
+      const rating = ratingInput.value || null;
       const comments = commentsTextarea.value.trim();
 
       // Here, you can send the survey data to your server if needed
@@ -381,16 +428,21 @@
       chatHistory.innerHTML = '';
       inputContainer.style.display = 'flex';
       chatHistory.style.display = 'flex';
+
+      // Reset flags
+      isSurveyOpen = false;
+      isChatStarted = false;
     });
   }
 
   // Helper function to create survey options
-  function createSurveyOption(labelText) {
+  function createSurveyOption(labelText, name, isRadio) {
     const optionLabel = document.createElement('label');
     optionLabel.classList.add('chat-widget-survey-option');
 
     const optionInput = document.createElement('input');
-    optionInput.type = 'checkbox';
+    optionInput.type = isRadio ? 'radio' : 'checkbox';
+    optionInput.name = name;
     optionInput.value = labelText;
 
     const optionSpan = document.createElement('span');
