@@ -210,6 +210,12 @@
   minimizeButton.addEventListener('click', minimizeChat);
   closeButton.addEventListener('click', closeChat);
 
+  // Function to display a welcome message
+  function displayWelcomeMessage() {
+    const welcomeMessage = "Ciao! Sono l'Assistente Virtuale BMW. Come posso aiutarti oggi?";
+    displayMessage('bot', welcomeMessage);
+  }
+
   // Event listener for accept button
   acceptButton.addEventListener('click', function () {
     isPrivacyAccepted = true;
@@ -222,6 +228,8 @@
     inputField.disabled = false;
     // Focus on the input field
     inputField.focus();
+    // Display the welcome message
+    displayWelcomeMessage();
   });
 
   // Function to display messages with improved scroll management
