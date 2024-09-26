@@ -1,3 +1,9 @@
+# Save Tree
+'''bash
+brew install tree
+tree -L 2 > directory_tree.txt
+'''
+
 # Back-End
 ## Initilaize a new Node.js Project
 ```bash

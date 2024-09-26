@@ -1,0 +1,23 @@
+.
+├── Dockerfile
+├── README.md
+├── _commands.md
+├── directory_tree.txt
+├── node_modules
+│   ├── ...
+├── package-lock.json
+├── package.json
+├── server.js
+└── widget
+    ├── BMWLT.TTF
+    ├── BMWLTBD.TTF
+    ├── BMW_arrow_down.png
+    ├── BMW_chat_icon.png
+    ├── BMW_close.png
+    ├── BMW_logo.png
+    ├── BMW_logo_grey.png
+    ├── chat-widget.css
+    ├── chat-widget.js
+    └── test.html
+
+76 directories, 17 files
