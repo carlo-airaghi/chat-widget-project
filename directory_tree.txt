@@ -1,96 +1,18 @@
 .
-├── Dockerfile
 ├── README.md
 ├── _commands.md
 ├── directory_tree.txt
-├── model_server.py
-├── node_modules
-│   ├── accepts
-│   ├── array-flatten
-│   ├── asynckit
-│   ├── axios
-│   ├── body-parser
-│   ├── bytes
-│   ├── call-bind
-│   ├── combined-stream
-│   ├── content-disposition
-│   ├── content-type
-│   ├── cookie
-│   ├── cookie-signature
-│   ├── cors
-│   ├── debug
-│   ├── define-data-property
-│   ├── delayed-stream
-│   ├── depd
-│   ├── destroy
-│   ├── dotenv
-│   ├── ee-first
-│   ├── encodeurl
-│   ├── es-define-property
-│   ├── es-errors
-│   ├── escape-html
-│   ├── etag
-│   ├── express
-│   ├── finalhandler
-│   ├── follow-redirects
-│   ├── form-data
-│   ├── forwarded
-│   ├── fresh
-│   ├── function-bind
-│   ├── get-intrinsic
-│   ├── gopd
-│   ├── has-property-descriptors
-│   ├── has-proto
-│   ├── has-symbols
-│   ├── hasown
-│   ├── http-errors
-│   ├── iconv-lite
-│   ├── inherits
-│   ├── ipaddr.js
-│   ├── media-typer
-│   ├── merge-descriptors
-│   ├── methods
-│   ├── mime
-│   ├── mime-db
-│   ├── mime-types
-│   ├── ms
-│   ├── negotiator
-│   ├── object-assign
-│   ├── object-inspect
-│   ├── on-finished
-│   ├── parseurl
-│   ├── path-to-regexp
-│   ├── proxy-addr
-│   ├── proxy-from-env
-│   ├── qs
-│   ├── range-parser
-│   ├── raw-body
-│   ├── safe-buffer
-│   ├── safer-buffer
-│   ├── send
-│   ├── serve-static
-│   ├── set-function-length
-│   ├── setprototypeof
-│   ├── side-channel
-│   ├── statuses
-│   ├── toidentifier
-│   ├── type-is
-│   ├── unpipe
-│   ├── utils-merge
-│   └── vary
-├── package-lock.json
-├── package.json
-├── server.js
-└── widget
-    ├── BMWLT.TTF
-    ├── BMWLTBD.TTF
-    ├── BMW_arrow_down.png
-    ├── BMW_chat_icon.png
-    ├── BMW_close.png
-    ├── BMW_logo.png
-    ├── BMW_logo_grey.png
-    ├── chat-widget.css
-    ├── chat-widget.js
-    └── test.html
+├── docker-compose.yml
+├── model_server
+│   ├── Dockerfile
+│   ├── model_server.py
+│   └── requirements.txt
+└── node_server
+    ├── Dockerfile
+    ├── node_modules
+    ├── package-lock.json
+    ├── package.json
+    ├── server.js
+    └── widget
 
-75 directories, 18 files
+4 directories, 11 files
