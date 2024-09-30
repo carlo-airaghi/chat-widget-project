@@ -76,3 +76,7 @@ docker run -d -p 5000:5000 \
   chat-widget-app
 
 ```
+
+
+## Adding web server with GPT
+pip install torch transformers flask flask-cors

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  node_server:
+    build:
+      context: ./node_server
+    env_file:
+      - ./node_server/.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      - model_server
+    networks:
+      - app-network
+
+  model_server:
+    build:
+      context: ./model_server
+    env_file:
+      - ./model_server/.env
+    expose:
+      - "8000"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
