@@ -4,9 +4,5 @@ node_server/node_modules/
 # Python cache
 model_server/__pycache__/
 
-# Environment variables
-node_server/.env
-model_server/.env
-
 # Docker files
 *.log
