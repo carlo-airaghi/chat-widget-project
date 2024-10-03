@@ -1,26 +1,23 @@
 services:
-  node_server:
-    build:
-      context: ./node_server
-    env_file:
-      - ./node_server/.env
-    ports:
-      - "5000:5000"
-    depends_on:
-      - model_server
-    networks:
-      - app-network
-
-  model_server:
+  llm_api:
     build:
       context: ./model_server
+      args:
+        MODEL_NAME: ${MODEL_NAME:-sshleifer/tiny-gpt2}
+        MODEL_TYPE: ${MODEL_TYPE:-causal}
+        MODEL_SERVER_PORT: ${MODEL_SERVER_PORT:-8000}
+    ports:
+      - "${MODEL_SERVER_PORT:-8000}:${MODEL_SERVER_PORT:-8000}"
     env_file:
       - ./model_server/.env
-    expose:
-      - "8000"
-    networks:
-      - app-network
 
-networks:
-  app-network:
-    driver: bridge
+  chat_widget_app:
+    build:
+      context: ./node_server
+    ports:
+      - "5000:5000"
+    environment:
+      - MODEL_SERVER_HOST=llm_api
+      - MODEL_SERVER_PORT=${MODEL_SERVER_PORT:-8000}
+    depends_on:
+      - llm_api
