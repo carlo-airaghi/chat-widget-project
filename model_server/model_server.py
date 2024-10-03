@@ -21,16 +21,15 @@ if not MODEL_NAME:
 if not MODEL_TYPE:
     raise ValueError("MODEL_TYPE environment variable not set.")
 
-# Load the tokenizer
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-
-# Load the model based on the model type
+# Load model and tokenizer
+tokenizer = AutoTokenizer.from_pretrained('./model')
 if MODEL_TYPE == 'causal':
-    model = AutoModelForCausalLM.from_pretrained(MODEL_NAME)
+    model = AutoModelForCausalLM.from_pretrained('./model')
 elif MODEL_TYPE == 'masked':
-    model = AutoModelForMaskedLM.from_pretrained(MODEL_NAME)
+    model = AutoModelForMaskedLM.from_pretrained('./model')
 else:
     raise ValueError("Invalid MODEL_TYPE. Choose 'causal' or 'masked'.")
+
 
 model.eval()
 
