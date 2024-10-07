@@ -2,34 +2,36 @@
 FROM python:3.8-slim
 
 # Declare build arguments at the top
-ARG MODEL_NAME
-ARG MODEL_TYPE
+ARG GENERATOR_MODEL_NAME
+ARG RETRIEVER_QUERY_EMBEDDING_MODEL
+ARG RETRIEVER_PASSAGE_EMBEDDING_MODEL
 ARG MODEL_SERVER_PORT=8000
 
 # Set environment variables using the build arguments
-ENV MODEL_NAME=${MODEL_NAME}
-ENV MODEL_TYPE=${MODEL_TYPE}
+ENV GENERATOR_MODEL_NAME=${GENERATOR_MODEL_NAME}
+ENV RETRIEVER_QUERY_EMBEDDING_MODEL=${RETRIEVER_QUERY_EMBEDDING_MODEL}
+ENV RETRIEVER_PASSAGE_EMBEDDING_MODEL=${RETRIEVER_PASSAGE_EMBEDDING_MODEL}
 ENV MODEL_SERVER_PORT=${MODEL_SERVER_PORT}
 
 # Install git and other dependencies
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip and install Python dependencies that don't change often
-RUN pip install --upgrade pip setuptools
-
-# Install model-independent Python packages
-RUN pip install flask flask-cors
-
-# Install packages required for model downloading
-RUN pip install transformers torch
+# Upgrade pip and install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip setuptools
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the model download script first
+# Copy the requirements.txt file first
+COPY requirements.txt ./
+
+# Install Python dependencies from requirements.txt
+RUN pip install -r requirements.txt
+
+# Copy the model download script
 COPY download_model.py ./
 
-# Download the model during the build process
+# Download the models during the build process
 RUN python download_model.py
 
 # Copy the rest of the application code
