@@ -1,6 +1,9 @@
 # Venv
 venv/
 
+# Secrets
+rag_pipeline/.env
+
 # Node.js dependencies
 node_server/node_modules/
 
