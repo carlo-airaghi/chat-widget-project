@@ -2,12 +2,10 @@
 venv/
 
 # Secrets
-rag_pipeline/.env
+rag/.env
 
 # Node.js dependencies
 node_server/node_modules/
-
-rag_api/__pycache__/
 
 # Docker files
 *.log
