@@ -1,0 +1,1 @@
+docker run -d -p 5000:5000 -e OPENAI_API_KEY=sk-WadN30r2_tt1ZBlSm6xELrIBo1uy_SvHyshjmMl_MYT3BlbkFJaWAYVthdddDX6ONlgXO8oPBjLF5lHrzXN3Dej80QMA rag_api_app

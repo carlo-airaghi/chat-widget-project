@@ -24,8 +24,8 @@ app.post('/chat', async (req, res) => {
   const userMessage = req.body.message;
 
   try {
-    // Use environment variable or default to 'model_server'
-    const modelServerHost = process.env.MODEL_SERVER_HOST || 'model_server';
+    // Use environment variable or default to 'rag_pipeline_server'
+    const modelServerHost = process.env.MODEL_SERVER_HOST || 'rag_pipeline_server';
     const modelServerPort = process.env.MODEL_SERVER_PORT || 8000;
 
     // Forward the request to the Python backend
@@ -37,7 +37,7 @@ app.post('/chat', async (req, res) => {
     const assistantMessage = response.data.reply;
     res.json({ reply: assistantMessage });
   } catch (error) {
-    console.error('Error communicating with local model API:', error.message);
+    console.error('Error communicating with the RAG pipeline server:', error.message);
     res.status(500).json({ error: 'An error occurred while processing your request.' });
   }
 });

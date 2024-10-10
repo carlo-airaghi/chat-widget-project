@@ -1,8 +1,10 @@
+# Venv
+venv/
+
 # Node.js dependencies
 node_server/node_modules/
 
-# Python cache
-model_server/__pycache__/
+rag_api/__pycache__/
 
 # Docker files
 *.log
