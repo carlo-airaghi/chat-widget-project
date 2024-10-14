@@ -1,3 +1,5 @@
+// server.js
+
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
@@ -30,11 +32,11 @@ app.post('/chat', async (req, res) => {
 
     // Forward the request to the Python backend
     const response = await axios.post(
-      `http://${modelServerHost}:${modelServerPort}/generate`,
-      { message: userMessage }
+      `http://${modelServerHost}:${modelServerPort}/ask`,
+      { question: userMessage }
     );
 
-    const assistantMessage = response.data.reply;
+    const assistantMessage = response.data.answer;
     res.json({ reply: assistantMessage });
   } catch (error) {
     console.error('Error communicating with the RAG pipeline server:', error.message);

@@ -2,7 +2,7 @@
 venv/
 
 # Secrets
-rag/.env
+.env
 
 # Node.js dependencies
 node_server/node_modules/

@@ -1,5 +1,6 @@
+# main.py
+
 import os
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
 from haystack import Pipeline, Document
@@ -10,9 +11,10 @@ from haystack.components.generators import OpenAIGenerator
 from haystack.components.builders.answer_builder import AnswerBuilder
 from haystack.components.builders.prompt_builder import PromptBuilder
 
-# Load environment variables from .env file
-load_dotenv()
+# Read the API key from environment variables
 api_key = os.environ.get('OPENAI_API_KEY')
+if not api_key:
+    raise ValueError("No OPENAI_API_KEY found in environment variables.")
 
 # Write documents to InMemoryDocumentStore
 document_store = InMemoryDocumentStore()
