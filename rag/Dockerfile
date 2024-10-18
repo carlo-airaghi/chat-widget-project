@@ -6,6 +6,8 @@ FROM python:3.9-slim
 # Set the working directory
 WORKDIR /app
 
+ARG OPEN_API_KEY
+
 # Upgrade pip
 RUN pip install --upgrade pip
 
