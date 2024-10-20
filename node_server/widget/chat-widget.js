@@ -7,8 +7,8 @@
   // Flags to track the chat and privacy state
   let isChatOpen = false;
   let isPrivacyAccepted = false;
-  let isChatStarted = false; // New flag to track if the chat has started
-  let isSurveyOpen = false; // New flag to track if the survey is open
+  let isChatStarted = false; // Flag to track if the chat has started
+  let isSurveyOpen = false; // Flag to track if the survey is open
 
   // Create the minimized chat icon
   const chatIcon = document.createElement('div');
@@ -36,13 +36,13 @@
   // Create the logo image element
   const logoImg = document.createElement('img');
   logoImg.id = 'chat-widget-logo';
-  logoImg.src = 'BMW_logo.png'; // Ensure the path is correct
-  logoImg.alt = 'BMW Logo';
+  logoImg.src = 'theapeshape.PNG'; // Ensure the path is correct
+  logoImg.alt = 'Logo';
 
   // Add the header text
   const headerText = document.createElement('span');
   headerText.id = 'chat-widget-header-text';
-  headerText.innerText = 'Assistente Virtuale';
+  headerText.innerText = 'Coach Virtuale';
 
   // Add the minimize button
   const minimizeButton = document.createElement('img');
@@ -104,7 +104,6 @@
   privacyText.innerHTML =
     'Le informazioni che fornirai durante questa sessione di chat saranno utilizzate esclusivamente per assisterti e migliorare i nostri servizi. Non condividiamo i tuoi dati personali con terze parti senza il tuo consenso. Per maggiori dettagli su come gestiamo i tuoi dati, ti preghiamo di leggere la nostra <a href="your-privacy-policy-link" target="_blank">Informativa sulla Privacy</a>.<br><br>' +
     '<strong>Avviso Importante:</strong><br>' +
-    "Il nostro Assistente Virtuale utilizza l'intelligenza artificiale per fornire risposte. Sebbene ci impegniamo per garantire l'accuratezza, l'AI potrebbe occasionalmente fornire informazioni inesatte o subottimali. Ti preghiamo di verificare informazioni critiche o sensibili con fonti ufficiali BMW o contattando direttamente il nostro servizio clienti.<br><br>" +
     'Cliccando su "Accetto", confermi di aver letto e accettato la nostra Informativa sulla Privacy e di comprendere le limitazioni dell\'Assistente Virtuale.';
 
   // Accept Button
@@ -212,7 +211,7 @@
 
   // Function to display a welcome message
   function displayWelcomeMessage() {
-    const welcomeMessage = "Ciao! Sono l'Assistente Virtuale BMW. Come posso aiutarti oggi?";
+    const welcomeMessage = "Ciao! Sono il tuo coach virtuale. Come posso aiutarti oggi?";
     displayMessage('bot', welcomeMessage);
   }
 
@@ -324,63 +323,66 @@
     const surveyContainer = document.createElement('div');
     surveyContainer.id = 'chat-widget-survey-container';
 
-    // Survey Text
-    const surveyText = document.createElement('p');
-    surveyText.id = 'chat-widget-survey-text';
-    surveyText.innerHTML =
-      'Il tuo feedback è importante per noi.<br>' +
-      'Ti ringraziamo in anticipo se vorrai dedicarci qualche minuto del tuo tempo.<br><br>' +
-      'La tua richiesta è stata risolta con un solo contatto?';
+    // First Question
+    const surveyQuestion1 = document.createElement('p');
+    surveyQuestion1.id = 'chat-widget-survey-question1';
+    surveyQuestion1.innerText =
+      'In una scala da 1 a 10, quanto ti hanno soddisfatto le risposte ricevute?';
 
-    // Survey Options
-    const surveyOptions = document.createElement('div');
-    surveyOptions.id = 'chat-widget-survey-options';
+    // Rating Slider for Question 1
+    const ratingContainer1 = document.createElement('div');
+    ratingContainer1.className = 'chat-widget-rating-container';
 
-    const option1 = createSurveyOption('Sì', 'survey-option', true); // Radio button
-    const option2 = createSurveyOption(
-      'Sono stato informato sui tempi di gestione della mia richiesta',
-      'survey-option',
-      true
-    );
-    const option3 = createSurveyOption('No', 'survey-option', true);
+    const ratingInput1 = document.createElement('input');
+    ratingInput1.type = 'range';
+    ratingInput1.min = '1';
+    ratingInput1.max = '10';
+    ratingInput1.step = '1';
+    ratingInput1.className = 'chat-widget-rating-input';
 
-    surveyOptions.appendChild(option1);
-    surveyOptions.appendChild(option2);
-    surveyOptions.appendChild(option3);
+    const ratingValue1 = document.createElement('span');
+    ratingValue1.className = 'chat-widget-rating-value';
+    ratingValue1.innerText = ''; // Start with no value
 
-    // Second Question
-    const surveyText2 = document.createElement('p');
-    surveyText2.id = 'chat-widget-survey-text2';
-    surveyText2.innerHTML =
-      'Dopo questa tua esperienza, quanto raccomanderesti BMW Financial Services ad amici e colleghi, in una scala da 0 a 10?';
-
-    // Rating Slider
-    const ratingContainer = document.createElement('div');
-    ratingContainer.id = 'chat-widget-rating-container';
-
-    const ratingInput = document.createElement('input');
-    ratingInput.type = 'range';
-    ratingInput.min = '0';
-    ratingInput.max = '10';
-    ratingInput.step = '1'; // Ensure integer values
-    ratingInput.id = 'chat-widget-rating-input';
-
-    const ratingValue = document.createElement('span');
-    ratingValue.id = 'chat-widget-rating-value';
-    ratingValue.innerText = ''; // Start with no value
-
-    ratingInput.addEventListener('input', function () {
-      ratingValue.innerText = ratingInput.value;
+    ratingInput1.addEventListener('input', function () {
+      ratingValue1.innerText = ratingInput1.value;
     });
 
-    ratingContainer.appendChild(ratingInput);
-    ratingContainer.appendChild(ratingValue);
+    ratingContainer1.appendChild(ratingInput1);
+    ratingContainer1.appendChild(ratingValue1);
 
-    // Final Question
-    const surveyText3 = document.createElement('p');
-    surveyText3.id = 'chat-widget-survey-text3';
-    surveyText3.innerText =
-      'Infine, per consentirci di migliorare la qualità del servizio, ti chiediamo di fornirci un tuo commento.';
+    // Second Question
+    const surveyQuestion2 = document.createElement('p');
+    surveyQuestion2.id = 'chat-widget-survey-question2';
+    surveyQuestion2.innerText =
+      "In una scala da 1 a 10, quanto consiglieresti l'app ad amici e colleghi?";
+
+    // Rating Slider for Question 2
+    const ratingContainer2 = document.createElement('div');
+    ratingContainer2.className = 'chat-widget-rating-container';
+
+    const ratingInput2 = document.createElement('input');
+    ratingInput2.type = 'range';
+    ratingInput2.min = '1';
+    ratingInput2.max = '10';
+    ratingInput2.step = '1';
+    ratingInput2.className = 'chat-widget-rating-input';
+
+    const ratingValue2 = document.createElement('span');
+    ratingValue2.className = 'chat-widget-rating-value';
+    ratingValue2.innerText = ''; // Start with no value
+
+    ratingInput2.addEventListener('input', function () {
+      ratingValue2.innerText = ratingInput2.value;
+    });
+
+    ratingContainer2.appendChild(ratingInput2);
+    ratingContainer2.appendChild(ratingValue2);
+
+    // Third Question (Free-text Input)
+    const surveyQuestion3 = document.createElement('p');
+    surveyQuestion3.id = 'chat-widget-survey-question3';
+    surveyQuestion3.innerText = 'Cosa consiglieresti per migliorare il servizio?';
 
     // Comments Textarea
     const commentsTextarea = document.createElement('textarea');
@@ -389,10 +391,10 @@
 
     // Apply inline styles to ensure the textarea displays multiple lines
     commentsTextarea.style.width = '100%';
-    commentsTextarea.style.height = '120px'; // Set desired height
+    commentsTextarea.style.height = '100px'; // Set desired height
     commentsTextarea.style.padding = '10px';
     commentsTextarea.style.fontSize = '14px';
-    commentsTextarea.style.fontFamily = '"BMWType", Arial, Helvetica, sans-serif';
+    commentsTextarea.style.fontFamily = '"Area", Arial, Helvetica, sans-serif';
     commentsTextarea.style.marginBottom = '10px';
     commentsTextarea.style.border = '1px solid #ccc';
     commentsTextarea.style.borderRadius = '5px';
@@ -404,11 +406,11 @@
     submitButton.innerText = 'Invia';
 
     // Append elements to the survey container
-    surveyContainer.appendChild(surveyText);
-    surveyContainer.appendChild(surveyOptions);
-    surveyContainer.appendChild(surveyText2);
-    surveyContainer.appendChild(ratingContainer);
-    surveyContainer.appendChild(surveyText3);
+    surveyContainer.appendChild(surveyQuestion1);
+    surveyContainer.appendChild(ratingContainer1);
+    surveyContainer.appendChild(surveyQuestion2);
+    surveyContainer.appendChild(ratingContainer2);
+    surveyContainer.appendChild(surveyQuestion3);
     surveyContainer.appendChild(commentsTextarea);
     surveyContainer.appendChild(submitButton);
 
@@ -418,11 +420,8 @@
     // Event listener for submit button
     submitButton.addEventListener('click', function () {
       // Collect survey data
-      const selectedOption = surveyOptions.querySelector(
-        '.chat-widget-survey-option input:checked'
-      )?.value;
-
-      const rating = ratingInput.value || null;
+      const satisfactionRating = ratingInput1.value || null;
+      const recommendationRating = ratingInput2.value || null;
       const comments = commentsTextarea.value.trim();
 
       // Here, you can send the survey data to your server if needed
@@ -441,24 +440,5 @@
       isSurveyOpen = false;
       isChatStarted = false;
     });
-  }
-
-  // Helper function to create survey options
-  function createSurveyOption(labelText, name, isRadio) {
-    const optionLabel = document.createElement('label');
-    optionLabel.classList.add('chat-widget-survey-option');
-
-    const optionInput = document.createElement('input');
-    optionInput.type = isRadio ? 'radio' : 'checkbox';
-    optionInput.name = name;
-    optionInput.value = labelText;
-
-    const optionSpan = document.createElement('span');
-    optionSpan.innerText = labelText;
-
-    optionLabel.appendChild(optionInput);
-    optionLabel.appendChild(optionSpan);
-
-    return optionLabel;
   }
 })();

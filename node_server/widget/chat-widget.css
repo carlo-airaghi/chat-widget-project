@@ -1,10 +1,24 @@
 /* widget/chat-widget.css */
 
-/* 1. Include the custom font */
+/* 1. Include the custom fonts */
 @font-face {
-  font-family: 'BMWType';
-  src: url('bmwlt.ttf') format('truetype');
+  font-family: 'Area';
+  src: url('Area_Regular.woff2') format('woff2');
   font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Area';
+  src: url('Area_SemiBold.woff2') format('woff2');
+  font-weight: 600; /* SemiBold */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Area';
+  src: url('Area_Bold.woff2') format('woff2');
+  font-weight: bold;
   font-style: normal;
 }
 
@@ -20,22 +34,22 @@
   right: 20px;
   width: 350px;
   height: 500px;
-  border: 1px solid #ccc;
+  border: 2px solid #FAC71C; /* Yellow border increased */
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  background-color: #FFFFFF;
+  background-color: #232323; /* Black background */
   display: flex;
   flex-direction: column;
   z-index: 9999;
-  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 /* 4. Header */
 #chat-widget-header {
   padding: 10px;
-  background-color: #1E1E1E;
-  color: #FFFFFF;
+  background-color: #363636; /* Dark gray background */
+  color: #FAC71C; /* Yellow text */
   display: flex;
   align-items: center;
 }
@@ -49,8 +63,9 @@
 #chat-widget-header-text {
   font-weight: bold;
   font-size: 18px;
-  color: #FFFFFF;
+  color: #FAC71C; /* Yellow text */
   flex-grow: 1;
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 #chat-widget-header-text,
@@ -90,7 +105,7 @@
   flex: 1;
   padding: 10px;
   overflow-y: auto;
-  background-color: #F5F5F5;
+  background-color: #232323; /* Black background */
   display: flex;
   flex-direction: column;
 }
@@ -98,16 +113,18 @@
 /* Input Container */
 #chat-widget-input-container {
   display: flex;
-  border-top: 1px solid #ccc;
+  border-top: 2px solid #FAC71C; /* Yellow border increased */
 }
 
 #chat-widget-input {
   flex: 1;
   border: none;
+  background-color: #363636; /* Dark gray background */
+  color: #FAC71C; /* Yellow text */
   padding: 10px;
   font-size: 16px;
   outline: none;
-  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 /* Message Container */
@@ -127,58 +144,62 @@
   max-width: 80%;
   word-wrap: break-word;
   font-size: 14px;
-  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 .chat-widget-message-user .chat-widget-bubble {
-  background-color: #0066B1;
-  color: #FFFFFF;
+  background-color: #FAC71C; /* Yellow background */
+  color: #232323; /* Black text */
   text-align: right;
 }
 
 .chat-widget-message-bot .chat-widget-bubble {
-  background-color: #E9E9EB;
-  color: #000000;
+  background-color: #363636; /* Dark gray background */
+  color: #FFFFFF; /* White text */
   text-align: left;
 }
 
 /* Privacy Container */
 #chat-widget-privacy-container {
   flex: 1;
-  padding: 15px 20px; /* Adjusted padding */
+  padding: 15px 20px;
   display: none; /* Hidden initially */
   flex-direction: column;
   overflow-y: auto;
+  background-color: #232323; /* Black background */
 }
 
 #chat-widget-privacy-title {
   font-size: 14px; /* Same as paragraph text */
-  font-weight: bold;
+  font-weight: 600; /* SemiBold */
   margin-top: 10px; /* Reduced margin */
   margin-bottom: 0; /* Removed space below the title */
+  color: #FFFFFF; /* White text */
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 #chat-widget-privacy-text {
   font-size: 14px;
-  color: #000000;
+  color: #FFFFFF; /* White text */
   margin-top: 5px; /* Added small margin above the text */
-  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 #chat-widget-privacy-accept-button {
-  background-color: #0066B1;
-  color: #FFFFFF;
-  border: none;
+  background-color: #363636; /* Dark gray background */
+  color: #FAC71C; /* Yellow text */
+  border: 2px solid #FAC71C; /* Yellow border increased */
   padding: 10px 20px;
-  font-size: 14px; /* Adjusted font size */
+  font-size: 14px;
+  font-weight: 600; /* SemiBold */
   border-radius: 5px;
   cursor: pointer;
-  align-self: flex-start; /* Left-align the button */
-  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+  align-self: flex-start;
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 #chat-widget-privacy-accept-button:hover {
-  background-color: #005494;
+  background-color: #232323; /* Darker background on hover */
 }
 
 /* Chat Icon (Minimized State) */
@@ -188,7 +209,8 @@
   right: 20px;
   width: 60px;
   height: 60px;
-  background-color: #1E1E1E;
+  background-color: #363636; /* Dark gray background */
+  border: 2px solid #FAC71C; /* Yellow border increased */
   border-radius: 50%;
   cursor: pointer;
   z-index: 9999;
@@ -206,10 +228,11 @@
 /* Survey Container */
 #chat-widget-survey-container {
   flex: 1;
-  padding: 15px 20px; /* Adjusted padding */
+  padding: 15px 20px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  background-color: #232323; /* Black background */
 }
 
 /* Adjusted text dimensions for coherence */
@@ -217,20 +240,21 @@
 #chat-widget-survey-text2,
 #chat-widget-survey-text3 {
   font-size: 14px;
-  color: #000000;
-  margin-bottom: 10px; /* Adjusted margin */
+  color: #FFFFFF; /* White text */
+  margin-bottom: 10px;
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 #chat-widget-survey-options {
   display: flex;
   flex-direction: column;
-  margin-bottom: 10px; /* Adjusted margin */
+  margin-bottom: 10px;
 }
 
 .chat-widget-survey-option {
   display: flex;
   align-items: center;
-  margin-bottom: 5px; /* Adjusted margin */
+  margin-bottom: 5px;
 }
 
 .chat-widget-survey-option input {
@@ -238,14 +262,15 @@
 }
 
 .chat-widget-survey-option span {
-  font-size: 14px; /* Match the rest of the ACS text */
-  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  color: #FFFFFF; /* White text */
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 #chat-widget-rating-container {
   display: flex;
   align-items: center;
-  margin-bottom: 10px; /* Adjusted margin */
+  margin-bottom: 10px;
 }
 
 #chat-widget-rating-input {
@@ -256,6 +281,8 @@
 #chat-widget-rating-value {
   font-size: 16px;
   font-weight: bold;
+  color: #FFFFFF; /* White text */
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 #chat-widget-comments-textarea {
@@ -263,26 +290,29 @@
   min-height: 80px;
   padding: 10px;
   font-size: 14px;
-  font-family: 'BMWType', Arial, Helvetica, sans-serif;
-  margin-bottom: 10px; /* Adjusted margin */
-  border: 1px solid #ccc;
+  background-color: #363636; /* Dark gray background */
+  color: #FAC71C; /* Yellow text */
+  font-family: 'Area', Arial, Helvetica, sans-serif;
+  margin-bottom: 10px;
+  border: 2px solid #FAC71C; /* Yellow border increased */
   border-radius: 5px;
 }
 
 #chat-widget-survey-submit-button {
-  background-color: #0066B1;
-  color: #FFFFFF;
-  border: none;
+  background-color: #363636; /* Dark gray background */
+  color: #FAC71C; /* Yellow text */
+  border: 2px solid #FAC71C; /* Yellow border increased */
   padding: 10px 20px;
-  font-size: 14px; /* Adjusted font size */
+  font-size: 14px;
+  font-weight: 600; /* SemiBold */
   border-radius: 5px;
   cursor: pointer;
-  align-self: flex-start; /* Left-align the button */
-  font-family: 'BMWType', Arial, Helvetica, sans-serif;
+  align-self: flex-start;
+  font-family: 'Area', Arial, Helvetica, sans-serif;
 }
 
 #chat-widget-survey-submit-button:hover {
-  background-color: #005494;
+  background-color: #232323; /* Darker background on hover */
 }
 
 /* Strong text styling */
@@ -290,4 +320,12 @@
 #chat-widget-survey-text strong {
   font-weight: bold;
   font-size: 14px;
+  color: #FFFFFF; /* White text */
+  font-family: 'Area', Arial, Helvetica, sans-serif;
+}
+
+/* New CSS Rule: Links in Yellow Text */
+#chat-widget-container a {
+  color: #FAC71C; /* Yellow color */
+  text-decoration: underline; /* Optional */
 }
