@@ -14,11 +14,11 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static files from the 'widget' directory
-app.use(express.static(path.join(__dirname, 'widget')));
+app.use(express.static(path.join(__dirname, 'widget_theapeshape')));
 
 // Serve test.html at the root URL
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'widget', 'test.html'));
+  res.sendFile(path.join(__dirname, 'widget_theapeshape', 'test.html'));
 });
 
 // Chat endpoint
