@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-.env
-=======
 # Venv
 venv/
 
@@ -13,4 +9,3 @@ node_server/node_modules/
 
 # Docker files
 *.log
->>>>>>> theapeshape
