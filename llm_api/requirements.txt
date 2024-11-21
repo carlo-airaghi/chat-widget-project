@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-torch
-transformers
-accelerate
-huggingface_hub
-python-dotenv

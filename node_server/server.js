@@ -13,7 +13,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the 'widget' directory
+// Serve static files from the 'widget_bmw' directory
 app.use(express.static(path.join(__dirname, 'widget_bmw')));
 
 // Serve test.html at the root URL
@@ -26,8 +26,8 @@ app.post('/chat', async (req, res) => {
   const userMessage = req.body.message;
 
   try {
-    // Use environment variable or default to 'rag_pipeline_server'
-    const modelServerHost = process.env.MODEL_SERVER_HOST || 'rag_pipeline_server';
+    // Use '127.0.0.1' to force IPv4
+    const modelServerHost = '127.0.0.1';
     const modelServerPort = process.env.MODEL_SERVER_PORT || 8000;
 
     // Forward the request to the Python backend
@@ -39,8 +39,13 @@ app.post('/chat', async (req, res) => {
     const assistantMessage = response.data.answer;
     res.json({ reply: assistantMessage });
   } catch (error) {
-    console.error('Error communicating with the RAG pipeline server:', error.message);
-    res.status(500).json({ error: 'An error occurred while processing your request.' });
+    console.error(
+      'Error communicating with the RAG pipeline server:',
+      error.message
+    );
+    res
+      .status(500)
+      .json({ error: 'An error occurred while processing your request.' });
   }
 });
 

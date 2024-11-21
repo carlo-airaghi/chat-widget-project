@@ -1,18 +1,43 @@
 .
 ├── README.md
-├── _commands.md
 ├── directory_tree.txt
 ├── docker-compose.yml
-├── model_server
+├── llm_api
 │   ├── Dockerfile
-│   ├── model_server.py
+│   ├── app.py
 │   └── requirements.txt
-└── node_server
+├── node_server
+│   ├── Dockerfile
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── server.js
+│   ├── services
+│   ├── test.txt
+│   ├── widget_bmw
+│   │   ├── BMWLT.TTF
+│   │   ├── BMWLTBD.TTF
+│   │   ├── BMW_arrow_down.png
+│   │   ├── BMW_chat_icon.png
+│   │   ├── BMW_close.png
+│   │   ├── BMW_logo.png
+│   │   ├── BMW_logo_grey.png
+│   │   ├── chat-widget.css
+│   │   ├── chat-widget.js
+│   │   └── test.html
+│   └── widget_theapeshape
+│       ├── Area_Bold.woff2
+│       ├── Area_Regular.woff2
+│       ├── Area_SemiBold.woff2
+│       ├── BMW_arrow_down.png
+│       ├── BMW_chat_icon.png
+│       ├── BMW_close.png
+│       ├── chat-widget.css
+│       ├── chat-widget.js
+│       ├── test.html
+│       └── theapeshape.PNG
+└── rag
     ├── Dockerfile
-    ├── node_modules
-    ├── package-lock.json
-    ├── package.json
-    ├── server.js
-    └── widget
+    ├── main.py
+    └── requirements.txt
 
-4 directories, 11 files
+7 directories, 34 files

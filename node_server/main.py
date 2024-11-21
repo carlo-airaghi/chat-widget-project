@@ -68,10 +68,9 @@ class CustomLLMGenerator:
             return {"error": str(e)}, "output_1"
 
 # Initialize your custom generator
-#llm_api_url = "http://localhost:8500/generate"
-#llm = CustomLLMGenerator(api_url=llm_api_url)
+# llm_api_url = "http://localhost:8500/generate"
+# llm = CustomLLMGenerator(api_url=llm_api_url)
 llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
-
 
 rag_pipeline = Pipeline()
 rag_pipeline.add_component("retriever", retriever)
@@ -96,7 +95,3 @@ def ask_question(request: QuestionRequest):
         }
     )
     return {"answer": results["llm"]["replies"]}
-    # Check for errors
-    # if "error" in results["llm"]:
-    #     raise HTTPException(status_code=500, detail=results["llm"]["error"])
-    # return {"answer": results["llm"]["replies"][0]}
