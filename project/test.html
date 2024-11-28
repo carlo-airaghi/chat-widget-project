@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Locale del Widget AI Chat</title>
+    <!-- Configuration for the chat widget -->
+    <script>
+      window.chatWidgetApiUrl = 'http://127.0.0.1:5000/chat'; // Backend URL
+      window.chatWidgetBaseUrl = 'http://127.0.0.1:5000/static/'; // Base URL for static assets
+    </script>
+    <!-- Include the chat widget CSS -->
+    <link rel="stylesheet" type="text/css" href="http://127.0.0.1:5000/static/chat-widget.css">
+</head>
+<body>
+    <h1>Testing AI Chat Widget Locally</h1>
+    <!-- Include the chat widget JS at the end of the body -->
+    <script src="http://127.0.0.1:5000/static/chat-widget.js"></script>
+</body>
+</html>
