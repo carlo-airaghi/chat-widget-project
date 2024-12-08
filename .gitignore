@@ -1,11 +1,5 @@
 # Venv
 venv/
 
-# Secrets
-.env
-
-# Node.js dependencies
-node_server/node_modules/
-
 # Docker files
 *.log
