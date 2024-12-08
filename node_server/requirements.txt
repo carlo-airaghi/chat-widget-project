@@ -1,5 +1,0 @@
-fastapi==0.115.0
-haystack-ai==2.6.1
-haystack-experimental==0.2.0
-openai
-uvicorn==0.31.1

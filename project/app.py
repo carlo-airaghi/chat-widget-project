@@ -8,7 +8,9 @@ from haystack.components.builders.prompt_builder import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
 from flask_cors import CORS
 
-app = Flask(__name__, static_folder='static')
+widget_name = 
+
+app = Flask(__name__, static_folder='static_theapeshape')
 CORS(app)
 
 # Read the API key from environment variables
