@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Test Locale del Widget AI Chat</title>
-    <!-- Configuration for the chat widget -->
     <script>
-      window.chatWidgetApiUrl = 'http://127.0.0.1:5000/chat'; // Backend URL
-      window.chatWidgetBaseUrl = 'http://127.0.0.1:5000/static/'; // Base URL for static assets
+      // Backend and static assets URL
+      window.chatWidgetApiUrl = 'http://127.0.0.1:5000/chat';
+      window.chatWidgetBaseUrl = 'http://127.0.0.1:5000/static/';
+
+      // Additional customer data
+      window.customerName = 'Carlo';     // e.g. fetched from your application context
+      window.customerHeight = '193cm';
+      window.customerWeight = '85kg';
     </script>
     <!-- Include the chat widget CSS -->
     <link rel="stylesheet" type="text/css" href="http://127.0.0.1:5000/static/chat-widget.css">

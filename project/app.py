@@ -26,13 +26,19 @@ document_store.write_documents([
     Document(content="Il mio nome è Giorgio e vivo a Roma.")
 ])
 
-# Build a RAG pipeline
+# Prompt template that includes customer info
 prompt_template = """
+Usa i seguenti dati del cliente per contestualizzare la risposta.
+Nome del cliente: {{customer_name}}
+Altezza del cliente: {{customer_height}}
+Peso del cliente: {{customer_weight}}
+
 Dato questi documenti, rispondi alla domanda.
 Documenti:
 {% for doc in documents %}
     {{ doc.content }}
 {% endfor %}
+
 Domanda: {{question}}
 Risposta:
 """
@@ -40,7 +46,6 @@ Risposta:
 retriever = InMemoryBM25Retriever(document_store=document_store)
 prompt_builder = PromptBuilder(template=prompt_template)
 
-# Initialize the OpenAI generator
 llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
 
 rag_pipeline = Pipeline()
@@ -55,24 +60,33 @@ def chat():
     data = request.get_json()
     question = data.get('message', '')
 
+    # Read the additional customer data
+    customer_name = data.get('customer_name', '')
+    customer_height = data.get('customer_height', '')
+    customer_weight = data.get('customer_weight', '')
+
     if not question:
         return jsonify({'reply': 'Per favore, scrivi un messaggio.'})
 
     try:
-        # Run the RAG pipeline
+        # Run the RAG pipeline with extra parameters
         results = rag_pipeline.run(
             {
                 "retriever": {"query": question},
-                "prompt_builder": {"question": question},
+                "prompt_builder": {
+                    "question": question,
+                    "customer_name": customer_name,
+                    "customer_height": customer_height,
+                    "customer_weight": customer_weight
+                },
             }
         )
-        reply = results["llm"]["replies"][0]  # Get the generated reply
+        reply = results["llm"]["replies"][0]
         return jsonify({'reply': reply})
     except Exception as e:
         print(f'Error: {e}')
         return jsonify({'reply': 'Spiacenti, si è verificato un errore. Per favore riprova più tardi.'})
 
-# Route to serve static files
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     return send_from_directory(app.static_folder, filename)
