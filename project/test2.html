@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Locale del Widget AI Chat</title>
+    <script>
+      // Backend and static assets URL
+      window.chatWidgetApiUrl = 'http://127.0.0.1:5000/chat';
+      window.chatWidgetBaseUrl = 'http://127.0.0.1:5000/static/';
+
+      // Additional customer data
+      window.customer_id = '00000002'
+      window.customerName = 'Davide';     // e.g. fetched from your application context
+      window.customerHeight = '185cm';
+      window.customerWeight = '75kg';
+    </script>
+    <!-- Include the chat widget CSS -->
+    <link rel="stylesheet" type="text/css" href="http://127.0.0.1:5000/static/chat-widget.css">
+</head>
+<body>
+    <h1>Testing AI Chat Widget Locally</h1>
+    <!-- Include the chat widget JS at the end of the body -->
+    <script src="http://127.0.0.1:5000/static/chat-widget.js"></script>
+</body>
+</html>

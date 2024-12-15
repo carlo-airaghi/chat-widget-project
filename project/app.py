@@ -18,7 +18,7 @@ api_key = os.environ.get('OPENAI_API_KEY')
 if not api_key:
     raise ValueError("No OPENAI_API_KEY found in environment variables.")
 
-# Write documents to InMemoryDocumentStore
+# In-memory database of documents
 document_store = InMemoryDocumentStore()
 document_store.write_documents([
     Document(content="Il mio nome è Jean e vivo a Parigi."),
@@ -26,12 +26,20 @@ document_store.write_documents([
     Document(content="Il mio nome è Giorgio e vivo a Roma.")
 ])
 
-# Prompt template that includes customer info
+# In-memory conversation histories: {customer_id: [(role, message), ...]}
+conversation_histories = {}
+
+# Updated prompt template to include conversation history
 prompt_template = """
 Usa i seguenti dati del cliente per contestualizzare la risposta.
 Nome del cliente: {{customer_name}}
 Altezza del cliente: {{customer_height}}
 Peso del cliente: {{customer_weight}}
+
+Ecco gli ultimi messaggi della conversazione (dal più vecchio al più recente):
+{% for msg in conversation_history %}
+- {{msg.role}}: {{msg.content}}
+{% endfor %}
 
 Dato questi documenti, rispondi alla domanda.
 Documenti:
@@ -45,7 +53,6 @@ Risposta:
 
 retriever = InMemoryBM25Retriever(document_store=document_store)
 prompt_builder = PromptBuilder(template=prompt_template)
-
 llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
 
 rag_pipeline = Pipeline()
@@ -59,17 +66,32 @@ rag_pipeline.connect("prompt_builder", "llm")
 def chat():
     data = request.get_json()
     question = data.get('message', '')
-
-    # Read the additional customer data
     customer_name = data.get('customer_name', '')
     customer_height = data.get('customer_height', '')
     customer_weight = data.get('customer_weight', '')
 
+    # We need a unique customer_id or session_id to identify the chat
+    customer_id = data.get('customer_id', '')
+
+    if not customer_id:
+        return jsonify({'reply': 'Per favore, fornisci un identificativo cliente.'}), 400
+
     if not question:
-        return jsonify({'reply': 'Per favore, scrivi un messaggio.'})
+        return jsonify({'reply': 'Per favore, scrivi un messaggio.'}), 400
+
+    # Initialize conversation history if not present
+    if customer_id not in conversation_histories:
+        conversation_histories[customer_id] = []
+
+    # Append the new user message to the conversation history
+    conversation_histories[customer_id].append({"role": "user", "content": question})
+
+    # Retrieve the last 10 messages (including user and assistant)
+    # If there are fewer than 10, take all
+    recent_messages = conversation_histories[customer_id][-10:]
 
     try:
-        # Run the RAG pipeline with extra parameters
+        # Run the pipeline with the conversation history as input as well
         results = rag_pipeline.run(
             {
                 "retriever": {"query": question},
@@ -77,11 +99,16 @@ def chat():
                     "question": question,
                     "customer_name": customer_name,
                     "customer_height": customer_height,
-                    "customer_weight": customer_weight
+                    "customer_weight": customer_weight,
+                    "conversation_history": recent_messages
                 },
             }
         )
         reply = results["llm"]["replies"][0]
+
+        # Append the assistant's reply to the conversation history
+        conversation_histories[customer_id].append({"role": "assistant", "content": reply})
+
         return jsonify({'reply': reply})
     except Exception as e:
         print(f'Error: {e}')

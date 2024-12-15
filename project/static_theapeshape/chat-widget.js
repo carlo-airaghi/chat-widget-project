@@ -4,6 +4,7 @@
   const baseUrl = window.chatWidgetBaseUrl || 'http://127.0.0.1:5000/static/';
 
   // Retrieve additional data from global variables
+  const customer_id = window.customer_id || '';
   const customerName = window.customerName || '';
   const customerHeight = window.customerHeight || '';
   const customerWeight = window.customerWeight || '';
@@ -231,6 +232,7 @@
       },
       body: JSON.stringify({
         message: message,
+        customer_id: customer_id,
         customer_name: customerName,
         customer_height: customerHeight,
         customer_weight: customerWeight
