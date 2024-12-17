@@ -18,7 +18,7 @@ api_key = os.environ.get('OPENAI_API_KEY')
 if not api_key:
     raise ValueError("No OPENAI_API_KEY found in environment variables.")
 
-# In-memory database of documents
+# In-memory document store setup
 document_store = InMemoryDocumentStore()
 document_store.write_documents([
     Document(content="Il mio nome è Jean e vivo a Parigi."),
@@ -26,10 +26,10 @@ document_store.write_documents([
     Document(content="Il mio nome è Giorgio e vivo a Roma.")
 ])
 
-# In-memory conversation histories: {customer_id: [(role, message), ...]}
+# In-memory conversation histories: {customer_id: [{"role": str, "content": str}, ...]}
 conversation_histories = {}
 
-# Updated prompt template to include conversation history
+# Prompt template
 prompt_template = """
 Usa i seguenti dati del cliente per contestualizzare la risposta.
 Nome del cliente: {{customer_name}}
@@ -83,15 +83,16 @@ def chat():
     if customer_id not in conversation_histories:
         conversation_histories[customer_id] = []
 
-    # Append the new user message to the conversation history
+    # Append the user's message and prune history
     conversation_histories[customer_id].append({"role": "user", "content": question})
+    if len(conversation_histories[customer_id]) > 10:
+        conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
 
-    # Retrieve the last 10 messages (including user and assistant)
-    # If there are fewer than 10, take all
-    recent_messages = conversation_histories[customer_id][-10:]
+    # Retrieve the last 10 messages
+    recent_messages = conversation_histories[customer_id]
 
     try:
-        # Run the pipeline with the conversation history as input as well
+        # Run the pipeline with the conversation history
         results = rag_pipeline.run(
             {
                 "retriever": {"query": question},
@@ -106,8 +107,10 @@ def chat():
         )
         reply = results["llm"]["replies"][0]
 
-        # Append the assistant's reply to the conversation history
+        # Append the assistant's reply and prune history
         conversation_histories[customer_id].append({"role": "assistant", "content": reply})
+        if len(conversation_histories[customer_id]) > 10:
+            conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
 
         return jsonify({'reply': reply})
     except Exception as e:
