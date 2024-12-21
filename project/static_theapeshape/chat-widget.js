@@ -3,11 +3,28 @@
   const apiUrl = window.chatWidgetApiUrl || 'http://127.0.0.1:5000/chat';
   const baseUrl = window.chatWidgetBaseUrl || 'http://127.0.0.1:5000/static/';
 
-  // Retrieve additional data from global variables
-  const customer_id = window.customer_id || '';
+  // Recupera i dati dell'utente da variabili globali o come preferisci
+  const customerID = window.customer_id || null;
   const customerName = window.customerName || '';
-  const customerHeight = window.customerHeight || '';
-  const customerWeight = window.customerWeight || '';
+  const customerSurname = window.customerSurname || '';
+  const customerAge = window.customerAge || null;
+  const customerSesso = window.customerSesso || '';
+  const customerWeight = window.customerWeight || null;
+  const customerHeight = window.customerHeight || null;
+  const customerPercentualeMassaGrassa = window.customerPercentualeMassaGrassa || null;
+  const customerDispendioCalorico = window.customerDispendioCalorico || null;
+  const customerDietType = window.customerDietType || null;
+  const customerMacroFase = window.customerMacroFase || null;
+  const customerWeek = window.customerWeek || null;
+  const customerDay = window.customerDay || null;
+  const customerDistrettoCarente1 = window.customerDistrettoCarente1 || '';
+  const customerDistrettoCarente2 = window.customerDistrettoCarente2 || '';
+  const customerExerciseSelected = window.customerExerciseSelected || false;
+  const customerContry = window.customerContry || '';
+  const customerCity = window.customerCity || '';
+  const customerProvince = window.customerProvince || '';
+  const customerSubExpire = window.customerSubExpire || '';
+  const customerSubType = window.customerSubType || null;
 
   // Flags
   let isChatOpen = false;
@@ -15,7 +32,7 @@
   let isChatStarted = false;
   let isSurveyOpen = false;
 
-  // Create the minimized chat icon
+  // Crea l'icona minimizzata
   const chatIcon = document.createElement('div');
   chatIcon.id = 'chat-widget-icon';
   chatIcon.title = 'Apri Chat';
@@ -28,7 +45,7 @@
 
   document.body.appendChild(chatIcon);
 
-  // Create the chat widget container
+  // Crea il container principale
   const widgetContainer = document.createElement('div');
   widgetContainer.id = 'chat-widget-container';
 
@@ -80,7 +97,6 @@
   inputContainer.appendChild(inputField);
 
   mainContent.appendChild(inputContainer);
-
   widgetContainer.appendChild(mainContent);
 
   // Privacy Container
@@ -94,7 +110,10 @@
   const privacyText = document.createElement('p');
   privacyText.id = 'chat-widget-privacy-text';
   privacyText.innerHTML =
-    'Le informazioni che fornirai durante questa sessione di chat saranno utilizzate esclusivamente per assisterti e migliorare i nostri servizi. Non condividiamo i tuoi dati personali con terze parti senza il tuo consenso. Per maggiori dettagli su come gestiamo i tuoi dati, ti preghiamo di leggere la nostra <a href="your-privacy-policy-link" target="_blank">Informativa sulla Privacy</a>.<br><br>' +
+    'Le informazioni che fornirai durante questa sessione di chat saranno utilizzate esclusivamente per assisterti e migliorare i nostri servizi. ' +
+    'Non condividiamo i tuoi dati personali con terze parti senza il tuo consenso. ' +
+    'Per maggiori dettagli su come gestiamo i tuoi dati, ti preghiamo di leggere la nostra ' +
+    '<a href="your-privacy-policy-link" target="_blank">Informativa sulla Privacy</a>.<br><br>' +
     '<strong>Avviso Importante:</strong><br>' +
     'Cliccando su "Accetto", confermi di aver letto e accettato la nostra Informativa sulla Privacy e di comprendere le limitazioni dell\'Assistente Virtuale.';
 
@@ -118,7 +137,7 @@
 
   inputField.disabled = true;
 
-  // Functions
+  // Funzioni
   function openChat() {
     isChatOpen = true;
     widgetContainer.style.display = 'flex';
@@ -153,7 +172,6 @@
       if (surveyContainer) {
         surveyContainer.remove();
       }
-
       chatHistory.innerHTML = '';
       inputField.value = '';
       isChatStarted = false;
@@ -164,7 +182,6 @@
     } else {
       widgetContainer.style.display = 'none';
       chatIcon.style.display = 'flex';
-
       chatHistory.innerHTML = '';
       inputField.value = '';
       privacyContainer.style.display = 'none';
@@ -225,18 +242,41 @@
 
     isChatStarted = true;
 
+    // Qui costruiamo il JSON da mandare al backend
+    const payload = {
+      message: message,
+      user: {
+        Customer_ID: customerID,
+        Name: customerName,
+        Surname: customerSurname,
+        Age: customerAge,
+        Sesso: customerSesso,
+        Weight: customerWeight,
+        Height: customerHeight,
+        PercentualeMassaGrassa: customerPercentualeMassaGrassa,
+        DispendioCalorico: customerDispendioCalorico,
+        DietType: customerDietType,
+        MacroFase: customerMacroFase,
+        Week: customerWeek,
+        Day: customerDay,
+        DistrettoCarente1: customerDistrettoCarente1,
+        DistrettoCarente2: customerDistrettoCarente2,
+        ExerciseSelected: customerExerciseSelected,
+        Contry: customerContry,
+        City: customerCity,
+        Province: customerProvince,
+        subExpire: customerSubExpire,
+        SubType: customerSubType
+      }
+    };
+
+    // Esegui la fetch
     fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        message: message,
-        customer_id: customer_id,
-        customer_name: customerName,
-        customer_height: customerHeight,
-        customer_weight: customerWeight
-      }),
+      body: JSON.stringify(payload),
     })
       .then((response) => response.json())
       .then((data) => {
@@ -364,7 +404,7 @@
       const recommendationRating = ratingInput2.value || null;
       const comments = commentsTextarea.value.trim();
 
-      // Optionally send survey data to server here
+      // Se vuoi inviare i dati del questionario ad un endpoint, puoi farlo qui
 
       widgetContainer.style.display = 'none';
       chatIcon.style.display = 'flex';

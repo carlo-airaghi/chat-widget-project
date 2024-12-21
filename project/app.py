@@ -1,6 +1,6 @@
 import os
 from flask import Flask, request, jsonify, send_from_directory
-from haystack import Pipeline, Document
+from haystack import Pipeline
 from haystack.utils import Secret
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
@@ -20,56 +20,60 @@ api_key = os.environ.get('OPENAI_API_KEY')
 if not api_key:
     raise ValueError("No OPENAI_API_KEY found in environment variables.")
 
-# In-memory document store setup
+# Set up the in-memory document store
 document_store = InMemoryDocumentStore()
 
-# Define the directory containing PDFs
+# Define the directory containing PDFs (within the 'static_theapeshape/documents' folder)
 pdf_dir = Path(app.static_folder) / 'documents'
 
-# Function to convert and index PDF documents
-def index_pdf_documents(directory):
+def index_pdf_documents(directory: Path):
+    """
+    Converts all PDFs in the specified directory to Document objects 
+    and writes them to the in-memory document store.
+    """
     converter = PyPDFToDocument()
     documents = []
     for pdf_file in directory.glob('*.pdf'):
         # Convert PDF to Document
         result = converter.run(sources=[pdf_file])
         docs = result.get('documents', [])
-        # Add metadata with filename
+        # Add metadata to each document
         for doc in docs:
             doc.meta['filename'] = pdf_file.name
         documents.extend(docs)
-    # Write documents to the document store
+    # Write documents into the document store
     document_store.write_documents(documents)
 
-# Index PDF documents
+# Index all PDFs at startup (only once)
 index_pdf_documents(pdf_dir)
 
-# Define the prompt template
+# Define the prompt template for the PromptBuilder
 prompt_template = """
-Usa i seguenti dati del cliente per contestualizzare la risposta.
-Nome del cliente: {{customer_name}}
-Altezza del cliente: {{customer_height}}
-Peso del cliente: {{customer_weight}}
+Use the following customer data to contextualize the answer:
+Customer Name: {{customer_name}}
+Customer Height: {{customer_height}}
+Customer Weight: {{customer_weight}}
 
-Ecco gli ultimi messaggi della conversazione (dal più vecchio al più recente):
+Here are the last messages of the conversation (from oldest to newest):
 {% for msg in conversation_history %}
 - {{msg.role}}: {{msg.content}}
 {% endfor %}
 
-Dato questi documenti, rispondi alla domanda.
-Documenti:
+Given these documents, answer the question.
+Documents:
 {% for doc in documents %}
     {{ doc.content }}
 {% endfor %}
 
-Domanda: {{question}}
-Risposta:
+Question: {{question}}
+Answer:
 """
 
 retriever = InMemoryBM25Retriever(document_store=document_store)
 prompt_builder = PromptBuilder(template=prompt_template)
 llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
 
+# Create a pipeline that retrieves documents, builds a prompt, then calls the LLM
 rag_pipeline = Pipeline()
 rag_pipeline.add_component("retriever", retriever)
 rag_pipeline.add_component("prompt_builder", prompt_builder)
@@ -77,38 +81,51 @@ rag_pipeline.add_component("llm", llm)
 rag_pipeline.connect("retriever", "prompt_builder.documents")
 rag_pipeline.connect("prompt_builder", "llm")
 
-# In-memory conversation histories: {customer_id: [{"role": str, "content": str}, ...]}
+# A dictionary to store conversation histories in memory
+# Key: customer_id, Value: list of messages, each as { "role": ..., "content": ... }
 conversation_histories = {}
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    """
+    Receives JSON data (with 'message' and 'user' fields), processes it, 
+    and returns an AI-generated response.
+    """
     data = request.get_json()
-    question = data.get('message', '')
-    customer_name = data.get('customer_name', '')
-    customer_height = data.get('customer_height', '')
-    customer_weight = data.get('customer_weight', '')
-    customer_id = data.get('customer_id', '')
 
+    # Extract the question/message from the JSON
+    question = data.get('message', '')
+
+    # Extract user data (the entire user object) from the JSON
+    user_data = data.get('user', {})
+
+    # Example of how to fetch some specific fields:
+    customer_id = user_data.get('Customer_ID', None)
+    customer_name = user_data.get('Name', '')
+    customer_height = user_data.get('Height', '')
+    customer_weight = user_data.get('Weight', '')
+
+    # Check for necessary fields
     if not customer_id:
-        return jsonify({'reply': 'Per favore, fornisci un identificativo cliente.'}), 400
+        return jsonify({'reply': 'Please provide a valid Customer_ID.'}), 400
 
     if not question:
-        return jsonify({'reply': 'Per favore, scrivi un messaggio.'}), 400
+        return jsonify({'reply': 'Please provide a message.'}), 400
 
-    # Initialize conversation history if not present
+    # Initialize a conversation history for this customer if none exists
     if customer_id not in conversation_histories:
         conversation_histories[customer_id] = []
 
-    # Append the user's message and prune history
+    # Append the user's message to conversation history
     conversation_histories[customer_id].append({"role": "user", "content": question})
     if len(conversation_histories[customer_id]) > 10:
         conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
 
-    # Retrieve the last 10 messages
+    # Get the most recent messages (last 10)
     recent_messages = conversation_histories[customer_id]
 
     try:
-        # Run the pipeline with the conversation history
+        # Run the pipeline with the user's question
         results = rag_pipeline.run(
             {
                 "retriever": {"query": question},
@@ -123,7 +140,7 @@ def chat():
         )
         reply = results["llm"]["replies"][0]
 
-        # Append the assistant's reply and prune history
+        # Add the assistant's response to the conversation history
         conversation_histories[customer_id].append({"role": "assistant", "content": reply})
         if len(conversation_histories[customer_id]) > 10:
             conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
@@ -131,22 +148,23 @@ def chat():
         return jsonify({'reply': reply})
     except Exception as e:
         print(f'Error: {e}')
-        return jsonify({'reply': 'Spiacenti, si è verificato un errore. Per favore riprova più tardi.'})
+        return jsonify({'reply': 'Sorry, an error occurred. Please try again later.'})
 
-# New endpoint to retrieve the conversation history for a given customer_id
 @app.route('/history/<customer_id>', methods=['GET'])
 def get_conversation_history(customer_id):
     """
-    Return the conversation history for the specified customer_id
+    Returns the conversation history for the specified customer_id.
+    If none is found, it returns an empty list.
     """
     if customer_id not in conversation_histories:
-        # If there's no record for this customer ID, return an empty list or 404
         return jsonify({"history": []}), 200
-    
     return jsonify({"history": conversation_histories[customer_id]}), 200
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
+    """
+    Serves static files (e.g., images, CSS, PDF documents) from the 'static' folder.
+    """
     return send_from_directory(app.static_folder, filename)
 
 if __name__ == '__main__':

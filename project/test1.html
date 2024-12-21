@@ -8,17 +8,35 @@
       window.chatWidgetApiUrl = 'http://127.0.0.1:5000/chat';
       window.chatWidgetBaseUrl = 'http://127.0.0.1:5000/static/';
 
-      // Additional customer data
-      window.customer_id = '00000001'
-      window.customerName = 'Carlo';     // e.g. fetched from your application context
-      window.customerHeight = '193cm';
-      window.customerWeight = '85kg';
+      // Mock all the other customer fields
+      window.customer_id = '00000001';
+      window.customerName = 'Carlo';
+      window.customerSurname = 'Rossi';
+      window.customerAge = 30;
+      window.customerSesso = 'Male';
+      window.customerWeight = 85; // in kg
+      window.customerHeight = 193; // in cm
+      window.customerPercentualeMassaGrassa = 15; 
+      window.customerDispendioCalorico = 2000;
+      window.customerDietType = 0;
+      window.customerMacroFase = 0;
+      window.customerWeek = 1;
+      window.customerDay = 0;
+      window.customerDistrettoCarente1 = 'PETTO';
+      window.customerDistrettoCarente2 = 'QUADRICIPITE';
+      window.customerExerciseSelected = true;
+      window.customerContry = 'Italia'; // note the original spelling as in your data
+      window.customerCity = 'Milano';
+      window.customerProvince = 'MI';
+      window.customerSubExpire = '2022-12-31';
+      window.customerSubType = 0;
     </script>
     <!-- Include the chat widget CSS -->
     <link rel="stylesheet" type="text/css" href="http://127.0.0.1:5000/static/chat-widget.css">
 </head>
 <body>
     <h1>Testing AI Chat Widget Locally</h1>
+
     <!-- Include the chat widget JS at the end of the body -->
     <script src="http://127.0.0.1:5000/static/chat-widget.js"></script>
 </body>
