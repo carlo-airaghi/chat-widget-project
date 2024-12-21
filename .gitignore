@@ -3,3 +3,5 @@ venv/
 
 # Docker files
 *.log
+
+project/static_theapeshape/documents/*

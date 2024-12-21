@@ -7,6 +7,8 @@ from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
 from haystack.components.builders.prompt_builder import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
 from flask_cors import CORS
+from pathlib import Path
+from haystack.components.converters import PyPDFToDocument
 
 widget_name = 'static_theapeshape'
 
@@ -20,16 +22,29 @@ if not api_key:
 
 # In-memory document store setup
 document_store = InMemoryDocumentStore()
-document_store.write_documents([
-    Document(content="Il mio nome è Jean e vivo a Parigi."),
-    Document(content="Il mio nome è Mark e vivo a Berlino."),
-    Document(content="Il mio nome è Giorgio e vivo a Roma.")
-])
 
-# In-memory conversation histories: {customer_id: [{"role": str, "content": str}, ...]}
-conversation_histories = {}
+# Define the directory containing PDFs
+pdf_dir = Path(app.static_folder) / 'documents'
 
-# Prompt template
+# Function to convert and index PDF documents
+def index_pdf_documents(directory):
+    converter = PyPDFToDocument()
+    documents = []
+    for pdf_file in directory.glob('*.pdf'):
+        # Convert PDF to Document
+        result = converter.run(sources=[pdf_file])
+        docs = result.get('documents', [])
+        # Add metadata with filename
+        for doc in docs:
+            doc.meta['filename'] = pdf_file.name
+        documents.extend(docs)
+    # Write documents to the document store
+    document_store.write_documents(documents)
+
+# Index PDF documents
+index_pdf_documents(pdf_dir)
+
+# Define the prompt template
 prompt_template = """
 Usa i seguenti dati del cliente per contestualizzare la risposta.
 Nome del cliente: {{customer_name}}
@@ -62,6 +77,9 @@ rag_pipeline.add_component("llm", llm)
 rag_pipeline.connect("retriever", "prompt_builder.documents")
 rag_pipeline.connect("prompt_builder", "llm")
 
+# In-memory conversation histories: {customer_id: [{"role": str, "content": str}, ...]}
+conversation_histories = {}
+
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
@@ -69,8 +87,6 @@ def chat():
     customer_name = data.get('customer_name', '')
     customer_height = data.get('customer_height', '')
     customer_weight = data.get('customer_weight', '')
-
-    # We need a unique customer_id or session_id to identify the chat
     customer_id = data.get('customer_id', '')
 
     if not customer_id:
