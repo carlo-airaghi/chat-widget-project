@@ -133,6 +133,18 @@ def chat():
         print(f'Error: {e}')
         return jsonify({'reply': 'Spiacenti, si è verificato un errore. Per favore riprova più tardi.'})
 
+# New endpoint to retrieve the conversation history for a given customer_id
+@app.route('/history/<customer_id>', methods=['GET'])
+def get_conversation_history(customer_id):
+    """
+    Return the conversation history for the specified customer_id
+    """
+    if customer_id not in conversation_histories:
+        # If there's no record for this customer ID, return an empty list or 404
+        return jsonify({"history": []}), 200
+    
+    return jsonify({"history": conversation_histories[customer_id]}), 200
+
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     return send_from_directory(app.static_folder, filename)
