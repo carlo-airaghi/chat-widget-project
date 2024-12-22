@@ -47,12 +47,44 @@ def index_pdf_documents(directory: Path):
 # Index all PDFs at startup (only once)
 index_pdf_documents(pdf_dir)
 
-# Define the prompt template for the PromptBuilder
+# Expanded prompt template to include all user data
 prompt_template = """
+Reply in italian 
 Use the following customer data to contextualize the answer:
-Customer Name: {{customer_name}}
-Customer Height: {{customer_height}}
-Customer Weight: {{customer_weight}}
+
+Customer ID: {{customer_id}}
+Name: {{customer_name}}
+Surname: {{customer_surname}}
+Age: {{customer_age}}
+Gender (Sesso): {{customer_sesso}}
+Weight: {{customer_weight}}
+Height: {{customer_height}}
+Body Fat % (PercentualeMassaGrassa): {{customer_percentuale_massa_grassa}}
+Caloric Expenditure (DispendioCalorico): {{customer_dispendio_calorico}}
+I valori del dispendio calorico hanno il seguente significato
+- circa 1.2 => Nessun allenamento, cammini poco e lavori da seduto. Circa 4000 passi al giorno; 
+- circa 1.35 => Allenamento 3 volte a settimana, cammini poco e lavori da seduto. Da 4000 a 8000 passi al giorno; 
+- circa 1.58 => Allenamento 3 o 4 volte a settimana, cammini abbastanza e lavori in piedi. Da 8000 a 12000 passi al giorno; 
+- circa 1.78 => Allenamento 4 volte o più a settimana, cammini molto e lavori in piedi. Da 12000 a 16000 passi al giorno.
+Diet Type: {{customer_diet_type}}
+I valori del Diet Type hanno il seguente significato 
+- 1: Perdere massa grassa; 
+- 2: Aumentare massa magra
+Macro Fase: {{customer_macro_fase}} indica il blocco di tredici settimane in cui si trova il cliente
+Week: {{customer_week}}  
+Day: {{customer_day}}
+DistrettoCarente1: {{customer_distretto_carente1}}
+DistrettoCarente2: {{customer_distretto_carente2}}
+ExerciseSelected: {{customer_exercise_selected}} indica se l'utente ha selezionato gli esercizi per il piano di allenamento
+Country: {{customer_contry}}
+City: {{customer_city}}
+Province: {{customer_province}}
+Subscription Expiration (subExpire): {{customer_sub_expire}}
+Subscription Type (SubType): {{customer_sub_type}}
+- 0 -> prova gratuita, 
+- 1 -> mensile, 
+- 2 -> trimestrale, 
+- 3 -> annuale
 
 Here are the last messages of the conversation (from oldest to newest):
 {% for msg in conversation_history %}
@@ -99,11 +131,28 @@ def chat():
     # Extract user data (the entire user object) from the JSON
     user_data = data.get('user', {})
 
-    # Example of how to fetch some specific fields:
+    # Retrieve all relevant fields from user_data (adjust or add as needed)
     customer_id = user_data.get('Customer_ID', None)
     customer_name = user_data.get('Name', '')
-    customer_height = user_data.get('Height', '')
+    customer_surname = user_data.get('Surname', '')
+    customer_age = user_data.get('Age', '')
+    customer_sesso = user_data.get('Sesso', '')
     customer_weight = user_data.get('Weight', '')
+    customer_height = user_data.get('Height', '')
+    customer_percentuale_massa_grassa = user_data.get('PercentualeMassaGrassa', '')
+    customer_dispendio_calorico = user_data.get('DispendioCalorico', '')
+    customer_diet_type = user_data.get('DietType', '')
+    customer_macro_fase = user_data.get('MacroFase', '')
+    customer_week = user_data.get('Week', '')
+    customer_day = user_data.get('Day', '')
+    customer_distretto_carente1 = user_data.get('DistrettoCarente1', '')
+    customer_distretto_carente2 = user_data.get('DistrettoCarente2', '')
+    customer_exercise_selected = user_data.get('ExerciseSelected', '')
+    customer_contry = user_data.get('Contry', '')  # spelled as in the sample
+    customer_city = user_data.get('City', '')
+    customer_province = user_data.get('Province', '')
+    customer_sub_expire = user_data.get('subExpire', '')
+    customer_sub_type = user_data.get('SubType', '')
 
     # Check for necessary fields
     if not customer_id:
@@ -125,19 +174,37 @@ def chat():
     recent_messages = conversation_histories[customer_id]
 
     try:
-        # Run the pipeline with the user's question
-        results = rag_pipeline.run(
-            {
-                "retriever": {"query": question},
-                "prompt_builder": {
-                    "question": question,
-                    "customer_name": customer_name,
-                    "customer_height": customer_height,
-                    "customer_weight": customer_weight,
-                    "conversation_history": recent_messages
-                },
+        # Run the pipeline with the user's question and the user data
+        results = rag_pipeline.run({
+            "retriever": {
+                "query": question
+            },
+            "prompt_builder": {
+                "question": question,
+                "customer_id": customer_id,
+                "customer_name": customer_name,
+                "customer_surname": customer_surname,
+                "customer_age": customer_age,
+                "customer_sesso": customer_sesso,
+                "customer_weight": customer_weight,
+                "customer_height": customer_height,
+                "customer_percentuale_massa_grassa": customer_percentuale_massa_grassa,
+                "customer_dispendio_calorico": customer_dispendio_calorico,
+                "customer_diet_type": customer_diet_type,
+                "customer_macro_fase": customer_macro_fase,
+                "customer_week": customer_week,
+                "customer_day": customer_day,
+                "customer_distretto_carente1": customer_distretto_carente1,
+                "customer_distretto_carente2": customer_distretto_carente2,
+                "customer_exercise_selected": customer_exercise_selected,
+                "customer_contry": customer_contry,
+                "customer_city": customer_city,
+                "customer_province": customer_province,
+                "customer_sub_expire": customer_sub_expire,
+                "customer_sub_type": customer_sub_type,
+                "conversation_history": recent_messages
             }
-        )
+        })
         reply = results["llm"]["replies"][0]
 
         # Add the assistant's response to the conversation history
