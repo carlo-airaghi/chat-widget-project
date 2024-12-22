@@ -1,101 +1,91 @@
-# chat-widget-project
-## Save Tree
-```bash
-brew install tree
-tree -L 2 > directory_tree.txt
+# THEAPESHAPE AI Chat Widget
+
+The **THEAPESHAPE AI Chat Widget** is an interactive AI-powered chatbot designed to provide personalized fitness coaching and guidance to advanced fitness enthusiasts. It leverages a retrieval-augmented generation (RAG) system using OpenAI's GPT models and Haystack to deliver relevant and contextual responses.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Future Enhancements](#future-enhancements)
+- [License](#license)
+- [Contribution](#contribution)
+
+## Overview
+
+The project is part of **The Ape Shape** app, a platform designed for fitness enthusiasts looking to optimize their workout routines and diet plans. This widget is embedded into the app's interface, allowing users to interact with an AI-based coach for personalized advice.
+
+## Features
+
+- **Personalized Responses**: Provides advice based on the user's fitness data, including weight, height, body fat percentage, and caloric expenditure.
+- **Retrieval-Augmented Generation**: Combines a document retriever with OpenAI's GPT to deliver highly relevant responses.
+- **Privacy and Survey Integration**: Includes a privacy policy acknowledgment and a post-chat survey for user feedback.
+- **Dynamic Chat Interface**: Fully customizable widget with an intuitive interface.
+- **PDF Document Indexing**: Supports knowledge retrieval from PDF documents.
+
+## Tech Stack
+
+- **Backend**: Flask, Haystack, OpenAI API
+- **Frontend**: JavaScript, HTML, CSS
+- **Containerization**: Docker
+- **Document Processing**: PyPDF
+- **Database**: In-memory document store (Haystack)
+
+## Installation
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your system.
+- OpenAI API key set as an environment variable (`OPENAI_API_KEY`).
+
+### Steps
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/the-ape-shape-ai-chat-widget.git
+   cd the-ape-shape-ai-chat-widget
+2. Build the Docker image:
 ```
-
-## Back-End
-### Initilaize a new Node.js Project and install dependencies 
-```bash
-cd node_server
-
-npm init -y
-
-npm install express axios cors dotenv
-
-cd ..
+docker build -t the-ape-shape-chat-widget .
 ```
-- express: Web framework for Node.js.
-- axios: Promise-based HTTP client for the browser and Node.js.
-- cors: Middleware for enabling CORS (Cross-Origin Resource Sharing).
-- dotenv: Loads environment variables from a .env file.
-
-### Test the Backend 
-```bash
-node server.js
+3. Run the container:
 ```
-you should see: "Server is running on port 5000"
-Use cURL to test the endpoint.
-```bash
-curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" -d '{"message": "Hello"}'
+docker run -p 5000:5000 -e OPENAI_API_KEY=your_openai_api_key the-ape-shape-chat-widget
+Access the widget at http://127.0.0.1:5000.
 ```
-## Front-End
-### Create Widget Directory
-```bash
-mkdir widget
+4. Open the test page (test1.html or test2.html) with the vs code extension "Live Server"  
+
+### Usage
+1. Open the test.html file in a browser to interact with the chat widget locally.
+2. Update the embedded script in the test.html file to include user data.
+3. Use the chat interface to send messages and receive AI-generated responses.
+4. Provide feedback via the post-chat survey to test survey functionality.
+
+### Project Structure
 ```
-### Create the Chat Widget
-```bash
-touch widget/chat-widget.js
+.
+├── Dockerfile
+├── app.py
+├── directory_tree.txt
+├── requirements.txt
+├── static_bmw
+│   ├── chat-widget.css
+│   ├── chat-widget.js
+│   ├── fonts
+│   └── images
+├── static_theapeshape
+│   ├── chat-widget.css
+│   ├── chat-widget.js
+│   ├── documents
+│   ├── fonts
+│   └── images
+├── test1.html
+└── test2.html
 ```
-Notes:
+### Future Enhancements
 
-- The widget is wrapped in an Immediately Invoked Function Expression (IIFE) to avoid polluting the global namespace.
-- Update the apiUrl variable with the actual URL of your backend server.
-- The widget dynamically creates and styles its elements to minimize dependencies on the host website.
-
-
-## Embed widget in website 
-To embed the widget in a website, add the following script tag to the HTML of the host website:
-```html
-<script src="http://localhost:5000/chat-widget.js"></script>
-```
-- Create a test html under widget 
-- Restart the server such that it starts serving test as well
-```bash
-node server.js
-```
-
-## Dockerization
-### Chat Widget Dockerization
-```bash
-cd node_server
-docker build -t chat-widget-app .
-
-docker run -d -p 5000:5000 \
-  --env-file .env \
-  --name chat-widget-container \
-  chat-widget-app
-
-docker run -d -p 5000:5000 \
-  -e MODEL_SERVER_HOST=host.docker.internal \
-  --name chat-widget-container \
-  chat-widget-app
-
-
-cd..
-```
-### LLM API Dockerization
-Go to the LLM API directory and export Varibales in the .env file 
-```bash
-cd model_server
-export $(grep -v '^#' .env | xargs)
-```
-
-```bash
-docker build -t llm_api \
-  --build-arg MODEL_NAME="${MODEL_NAME}" \
-  --build-arg MODEL_TYPE="${MODEL_TYPE}" \
-  --build-arg MODEL_SERVER_PORT="${MODEL_SERVER_PORT}" \
-  .
-```
-
-```bash
-docker run -p 8000:${MODEL_SERVER_PORT} --env-file .env llm_api
-```
-
-```bash
-unset MODEL_NAME MODEL_TYPE MODEL_SERVER_PORT
-cd..
-```
+- Database Integration: Replace the in-memory store with a persistent database.
+- Advanced Analytics: Incorporate analytics to track user interactions and improve performance.

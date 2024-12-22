@@ -1,0 +1,20 @@
+.
+├── Dockerfile
+├── app.py
+├── directory_tree.txt
+├── requirements.txt
+├── static_bmw
+│   ├── chat-widget.css
+│   ├── chat-widget.js
+│   ├── fonts
+│   └── images
+├── static_theapeshape
+│   ├── chat-widget.css
+│   ├── chat-widget.js
+│   ├── documents
+│   ├── fonts
+│   └── images
+├── test1.html
+└── test2.html
+
+8 directories, 10 files
