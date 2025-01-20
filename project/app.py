@@ -250,6 +250,18 @@ def get_conversation_history(customer_id):
         return jsonify({"history": []}), 200
     return jsonify({"history": conversation_histories[customer_id]}), 200
 
+@app.route('/deleteHistory/<customer_id>', methods=['DELETE'])
+def delete_history(customer_id):
+    """
+    Deletes (resets) the conversation history for the specified customer_id.
+    """
+    if customer_id in conversation_histories:
+        del conversation_histories[customer_id]
+        return jsonify({"status": "success", "message": "Conversation history deleted."}), 200
+    else:
+        return jsonify({"status": "error", "message": "No conversation history found for this user."}), 404
+
+
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     """
