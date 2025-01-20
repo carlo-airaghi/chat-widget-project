@@ -18,6 +18,12 @@ docker run -d \
   ai-chat-widget:latest
 ```
 
+## Docker Hub
+```
+docker tag ai-chat-widget carloairaghi/chat-widget:latest
+docker push carloairaghi/chat-widget:latest  
+```
+
 ## Test API Call
 ```
 curl http://localhost:5000/history/123

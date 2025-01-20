@@ -4,33 +4,394 @@
     <meta charset="UTF-8">
     <title>Test Locale del Widget AI Chat</title>
     <script>
-      // Backend and static assets URL
+      // ======= BACKEND & STATIC ASSETS URLs =======
       window.chatWidgetApiUrl = 'http://127.0.0.1:5000/chat';
       window.chatWidgetBaseUrl = 'http://127.0.0.1:5000/static/';
 
-      // Mock all the other customer fields
-      window.customer_id = '00000001';
-      window.customerName = 'Carlo';
-      window.customerSurname = 'Rossi';
-      window.customerAge = 30;
-      window.customerSesso = 'Male';
-      window.customerWeight = 85; // in kg
-      window.customerHeight = 193; // in cm
-      window.customerPercentualeMassaGrassa = 15; 
-      window.customerDispendioCalorico = 2000;
-      window.customerDietType = 0;
+      // ======= REQUIRED CUSTOMER DATA (OLD & NEW) =======
+      window.customer_id = '12c0e21b-ccdb-4309-9e4a-98418f3f3321';
+      window.customerName = 'Francesco';
+      window.customerSurname = 'Roveda';
+      window.customerAge = 23;
+      window.customerSesso = 1; // e.g., 1 for male
+      window.customerWeight = 134;
+      window.customerHeight = 152;
+      window.customerPercentualeMassaGrassa = 27;
+      window.customerDispendioCalorico = 1.58;
+      window.customerDietType = 1;     // 1 => Perdere massa grassa
       window.customerMacroFase = 0;
-      window.customerWeek = 1;
-      window.customerDay = 0;
-      window.customerDistrettoCarente1 = 'PETTO';
-      window.customerDistrettoCarente2 = 'QUADRICIPITE';
-      window.customerExerciseSelected = true;
-      window.customerContry = 'Italia'; // note the original spelling as in your data
+      window.customerWeek = 0;
+      window.customerDay = 1;
+      window.customerDistrettoCarente1 = null;
+      window.customerDistrettoCarente2 = null;
+      window.customerContry = 'Italia'; // "Contry" spelled as originally required
       window.customerCity = 'Milano';
       window.customerProvince = 'MI';
       window.customerSubExpire = '2022-12-31';
-      window.customerSubType = 0;
+      window.customerSubType = 0;      // 0 => prova gratuita
+      window.customerExerciseSelected = true;
+
+      // ======= ADDITIONAL NEW DATA =======
+      window.customerKcal = 3734;
+      window.customerFats = 87;
+      window.customerProteins = 308;
+      window.customerCarbs = 430;
+      window.customerSettimanaTestEsercizi = true;
+      window.customerSettimanaTestPesi = false;
+
+      // ======= FULL WorkoutDellaSettimana OBJECT =======
+      window.customerWorkoutDellaSettimana = {
+        "1": [
+          {
+            "Tipologia": "QUADRICIPITI",
+            "Name": "PRESSA 45°",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "QUADRICIPITI",
+            "Name": "LEG EXTENSION",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "PETTO",
+            "Name": "PANCA PIANA AL MULTIPOWER",
+            "Ripetizioni": "6",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "PETTO-SECONDARIO",
+            "Name": "SPINTE MANUBRI PANCA PIANA",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "SPALLE",
+            "Name": "MILITARY",
+            "Ripetizioni": "6",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "SPALLE-SECONDARIO",
+            "Name": "ALZATE LATERALI SINGOLE  SU PANCA INCLINATA",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "TRICIPITI",
+            "Name": "KICKBACK AL CAVO BASSO SINGOLO",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "TRICIPITI",
+            "Name": "DIP",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "POLPACCI",
+            "Name": "CALF IN PIEDI",
+            "Ripetizioni": "9",
+            "Serie": 4,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "",
+            "DistrettoText": false
+          }
+        ],
+        "2": [
+          {
+            "Tipologia": "FEMORALE",
+            "Name": "HYPEREXTENSION",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "FEMORALE",
+            "Name": "STACCO DA TERRA",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "DORSO",
+            "Name": "REMATORE BILANCIERE",
+            "Ripetizioni": "6",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "DORSO-SECONDARIO",
+            "Name": "PULLEY BASSO TRIANGOLO",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "DELTOIDE POSTERIORE",
+            "Name": "REAR DELT",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "BICIPITI",
+            "Name": "CURL MANUBRI CON ROTAZIONE SU PANCA INCLINATA",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "BICIPITI",
+            "Name": "CURL MARTELLO PANCA INCLINATA",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "ADDOME",
+            "Name": "CRUNCH CON FUNE",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          }
+        ],
+        "3": [
+          {
+            "Tipologia": "PETTO-SECONDARIO",
+            "Name": "CHEST INCLINE",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "PETTO-SECONDARIO",
+            "Name": "CROCI AI CAVI SU PANCA PIANA",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "QUADRICIPITI",
+            "Name": "SQUAT",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "QUADRICIPITI",
+            "Name": "HACK SQUAT",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "SPALLE-SECONDARIO",
+            "Name": "ALZATE LATERALI AL CAVO BASSO",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "SPALLE-SECONDARIO",
+            "Name": "ALZATE LATERALI IN PIEDI",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "TRICIPITI",
+            "Name": "PUSH DOWN ASTA ANGOLATA",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "TRICIPITI",
+            "Name": "FRENCH PRESS MANUBRI",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "POLPACCI",
+            "Name": "CALF ALLA PRESSA",
+            "Ripetizioni": "12",
+            "Serie": 4,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          }
+        ],
+        "4": [
+          {
+            "Tipologia": "FEMORALE",
+            "Name": "STACCO RUMENO",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "FEMORALE",
+            "Name": "LEG CURL SDRAIATO",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "DORSO-SECONDARIO",
+            "Name": "LAT MACHINE IMPUGNATURA INVERSA",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "DORSO-SECONDARIO",
+            "Name": "REMATORE MANUBRIO",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "DELTOIDE POSTERIORE",
+            "Name": "FLY 90°",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "BICIPITI",
+            "Name": "SPIDER CURL",
+            "Ripetizioni": "9",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "BICIPITI",
+            "Name": "CURL BILANCIERE E.Z",
+            "Ripetizioni": "12",
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 60,
+            "Note": "Rispetta il peso indicato",
+            "DistrettoText": false
+          },
+          {
+            "Tipologia": "ADDOME METABOLICO",
+            "Name": "ROTELLA",
+            "Ripetizioni": 45,
+            "Serie": 3,
+            "Peso": 30,
+            "Riposo": 90,
+            "Note": "Rispetta le ripetizioni indicate",
+            "DistrettoText": false
+          }
+        ]
+      };
     </script>
+
     <!-- Include the chat widget CSS -->
     <link rel="stylesheet" type="text/css" href="http://127.0.0.1:5000/static/chat-widget.css">
 </head>

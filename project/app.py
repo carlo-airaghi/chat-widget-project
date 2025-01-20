@@ -44,12 +44,13 @@ def index_pdf_documents(directory: Path):
     # Write documents into the document store
     document_store.write_documents(documents)
 
-# Index all PDFs at startup (only once)
+# Index all PDFs at startup
 index_pdf_documents(pdf_dir)
 
-# Expanded prompt template to include all user data
+# Updated prompt template including all new fields
 prompt_template = """
 Reply in italian 
+Don't reply in markdown proposing text in bold with **<text>** or similar stuff, reply just as plain text, the result will be used as a chat message.
 Use the following customer data to contextualize the answer:
 
 Customer ID: {{customer_id}}
@@ -66,25 +67,39 @@ I valori del dispendio calorico hanno il seguente significato
 - circa 1.35 => Allenamento 3 volte a settimana, cammini poco e lavori da seduto. Da 4000 a 8000 passi al giorno; 
 - circa 1.58 => Allenamento 3 o 4 volte a settimana, cammini abbastanza e lavori in piedi. Da 8000 a 12000 passi al giorno; 
 - circa 1.78 => Allenamento 4 volte o più a settimana, cammini molto e lavori in piedi. Da 12000 a 16000 passi al giorno.
+
 Diet Type: {{customer_diet_type}}
-I valori del Diet Type hanno il seguente significato 
-- 1: Perdere massa grassa; 
-- 2: Aumentare massa magra
-Macro Fase: {{customer_macro_fase}} indica il blocco di tredici settimane in cui si trova il cliente
-Week: {{customer_week}}  
+- 1 => Perdere massa grassa
+- 2 => Aumentare massa magra
+
+Macro Fase: {{customer_macro_fase}} (indica il blocco di tredici settimane in cui si trova il cliente)
+Week: {{customer_week}}
 Day: {{customer_day}}
 DistrettoCarente1: {{customer_distretto_carente1}}
 DistrettoCarente2: {{customer_distretto_carente2}}
-ExerciseSelected: {{customer_exercise_selected}} indica se l'utente ha selezionato gli esercizi per il piano di allenamento
+ExerciseSelected: {{customer_exercise_selected}}
 Country: {{customer_contry}}
 City: {{customer_city}}
 Province: {{customer_province}}
 Subscription Expiration (subExpire): {{customer_sub_expire}}
 Subscription Type (SubType): {{customer_sub_type}}
-- 0 -> prova gratuita, 
-- 1 -> mensile, 
-- 2 -> trimestrale, 
-- 3 -> annuale
+- 0 => prova gratuita
+- 1 => mensile
+- 2 => trimestrale
+- 3 => annuale
+
+Additional Nutritional Data:
+- Kcal: {{customer_kcal}}
+- Fats (g): {{customer_fats}}
+- Proteins (g): {{customer_proteins}}
+- Carbs (g): {{customer_carbs}}
+
+Test Settings:
+- SettimanaTestEsercizi: {{customer_settimana_test_esercizi}}
+- SettimanaTestPesi: {{customer_settimana_test_pesi}}
+
+WorkoutDellaSettimana (if relevant):
+{{customer_workout_della_settimana}}
 
 Here are the last messages of the conversation (from oldest to newest):
 {% for msg in conversation_history %}
@@ -114,7 +129,6 @@ rag_pipeline.connect("retriever", "prompt_builder.documents")
 rag_pipeline.connect("prompt_builder", "llm")
 
 # A dictionary to store conversation histories in memory
-# Key: customer_id, Value: list of messages, each as { "role": ..., "content": ... }
 conversation_histories = {}
 
 @app.route('/chat', methods=['POST'])
@@ -124,14 +138,10 @@ def chat():
     and returns an AI-generated response.
     """
     data = request.get_json()
-
-    # Extract the question/message from the JSON
     question = data.get('message', '')
-
-    # Extract user data (the entire user object) from the JSON
     user_data = data.get('user', {})
 
-    # Retrieve all relevant fields from user_data (adjust or add as needed)
+    # Extract new & old fields
     customer_id = user_data.get('Customer_ID', None)
     customer_name = user_data.get('Name', '')
     customer_surname = user_data.get('Surname', '')
@@ -148,33 +158,37 @@ def chat():
     customer_distretto_carente1 = user_data.get('DistrettoCarente1', '')
     customer_distretto_carente2 = user_data.get('DistrettoCarente2', '')
     customer_exercise_selected = user_data.get('ExerciseSelected', '')
-    customer_contry = user_data.get('Contry', '')  # spelled as in the sample
+    customer_contry = user_data.get('Contry', '')
     customer_city = user_data.get('City', '')
     customer_province = user_data.get('Province', '')
     customer_sub_expire = user_data.get('subExpire', '')
     customer_sub_type = user_data.get('SubType', '')
 
-    # Check for necessary fields
+    # New fields
+    customer_kcal = user_data.get('Kcal', '')
+    customer_fats = user_data.get('Fats', '')
+    customer_proteins = user_data.get('Proteins', '')
+    customer_carbs = user_data.get('Carbs', '')
+    customer_settimana_test_esercizi = user_data.get('SettimanaTestEsercizi', '')
+    customer_settimana_test_pesi = user_data.get('SettimanaTestPesi', '')
+    customer_workout_della_settimana = user_data.get('WorkoutDellaSettimana', {})
+
     if not customer_id:
         return jsonify({'reply': 'Please provide a valid Customer_ID.'}), 400
-
     if not question:
         return jsonify({'reply': 'Please provide a message.'}), 400
 
-    # Initialize a conversation history for this customer if none exists
+    # Maintain conversation history
     if customer_id not in conversation_histories:
         conversation_histories[customer_id] = []
-
-    # Append the user's message to conversation history
     conversation_histories[customer_id].append({"role": "user", "content": question})
     if len(conversation_histories[customer_id]) > 10:
         conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
 
-    # Get the most recent messages (last 10)
     recent_messages = conversation_histories[customer_id]
 
     try:
-        # Run the pipeline with the user's question and the user data
+        # Run pipeline
         results = rag_pipeline.run({
             "retriever": {
                 "query": question
@@ -202,17 +216,26 @@ def chat():
                 "customer_province": customer_province,
                 "customer_sub_expire": customer_sub_expire,
                 "customer_sub_type": customer_sub_type,
+                "customer_kcal": customer_kcal,
+                "customer_fats": customer_fats,
+                "customer_proteins": customer_proteins,
+                "customer_carbs": customer_carbs,
+                "customer_settimana_test_esercizi": customer_settimana_test_esercizi,
+                "customer_settimana_test_pesi": customer_settimana_test_pesi,
+                "customer_workout_della_settimana": customer_workout_della_settimana,
                 "conversation_history": recent_messages
             }
         })
+
         reply = results["llm"]["replies"][0]
 
-        # Add the assistant's response to the conversation history
+        # Append the AI response
         conversation_histories[customer_id].append({"role": "assistant", "content": reply})
         if len(conversation_histories[customer_id]) > 10:
             conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
 
         return jsonify({'reply': reply})
+
     except Exception as e:
         print(f'Error: {e}')
         return jsonify({'reply': 'Sorry, an error occurred. Please try again later.'})
@@ -230,7 +253,7 @@ def get_conversation_history(customer_id):
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     """
-    Serves static files (e.g., images, CSS, PDF documents) from the 'static' folder.
+    Serves static files (images, CSS, PDFs, etc.) from the 'static_theapeshape' folder.
     """
     return send_from_directory(app.static_folder, filename)
 
