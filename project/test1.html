@@ -19,12 +19,14 @@
       window.customerPercentualeMassaGrassa = 27;
       window.customerDispendioCalorico = 1.58;
       window.customerDietType = 1;     // 1 => Perdere massa grassa
-      window.customerMacroFase = 0;
+
+      // Updated from MacroFase to Macroblocco:
+      window.customerMacroblocco = 0;
       window.customerWeek = 0;
       window.customerDay = 1;
       window.customerDistrettoCarente1 = null;
       window.customerDistrettoCarente2 = null;
-      window.customerContry = 'Italia'; // "Contry" spelled as originally required
+      window.customerContry = 'Italia'; // kept as "Contry" to match Flask side
       window.customerCity = 'Milano';
       window.customerProvince = 'MI';
       window.customerSubExpire = '2022-12-31';
@@ -39,8 +41,8 @@
       window.customerSettimanaTestEsercizi = true;
       window.customerSettimanaTestPesi = false;
 
-      // ======= FULL WorkoutDellaSettimana OBJECT =======
-      window.customerWorkoutDellaSettimana = {
+      // ======= Renamed from customerWorkoutDellaSettimana to customerWorkoutDellaSettimna =======
+      window.customerWorkoutDellaSettimna = {
         "1": [
           {
             "Tipologia": "QUADRICIPITI",

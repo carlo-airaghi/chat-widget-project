@@ -1,13 +1,14 @@
 import os
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+from pathlib import Path
+
 from haystack import Pipeline
 from haystack.utils import Secret
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
 from haystack.components.builders.prompt_builder import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
-from flask_cors import CORS
-from pathlib import Path
 from haystack.components.converters import PyPDFToDocument
 
 widget_name = 'static_theapeshape'
@@ -28,7 +29,7 @@ pdf_dir = Path(app.static_folder) / 'documents'
 
 def index_pdf_documents(directory: Path):
     """
-    Converts all PDFs in the specified directory to Document objects 
+    Converts all PDFs in the specified directory to Document objects
     and writes them to the in-memory document store.
     """
     converter = PyPDFToDocument()
@@ -47,7 +48,7 @@ def index_pdf_documents(directory: Path):
 # Index all PDFs at startup
 index_pdf_documents(pdf_dir)
 
-# Updated prompt template including all new fields
+# Updated prompt template including all fields
 prompt_template = """
 Reply in italian 
 Don't reply in markdown proposing text in bold with **<text>** or similar stuff, reply just as plain text, the result will be used as a chat message.
@@ -72,13 +73,13 @@ Diet Type: {{customer_diet_type}}
 - 1 => Perdere massa grassa
 - 2 => Aumentare massa magra
 
-Macro Fase: {{customer_macro_fase}} (indica il blocco di tredici settimane in cui si trova il cliente)
+Macroblocco: {{customer_macroblocco}} (indica il blocco di tredici settimane in cui si trova il cliente)
 Week: {{customer_week}}
 Day: {{customer_day}}
 DistrettoCarente1: {{customer_distretto_carente1}}
 DistrettoCarente2: {{customer_distretto_carente2}}
 ExerciseSelected: {{customer_exercise_selected}}
-Country: {{customer_contry}}
+Country: {{customer_country}}
 City: {{customer_city}}
 Province: {{customer_province}}
 Subscription Expiration (subExpire): {{customer_sub_expire}}
@@ -98,8 +99,8 @@ Test Settings:
 - SettimanaTestEsercizi: {{customer_settimana_test_esercizi}}
 - SettimanaTestPesi: {{customer_settimana_test_pesi}}
 
-WorkoutDellaSettimana (if relevant):
-{{customer_workout_della_settimana}}
+WorkoutDellaSettimna (if relevant):
+{{customer_workout_della_settimna}}
 
 Here are the last messages of the conversation (from oldest to newest):
 {% for msg in conversation_history %}
@@ -141,7 +142,7 @@ def chat():
     question = data.get('message', '')
     user_data = data.get('user', {})
 
-    # Extract new & old fields
+    # Extract fields
     customer_id = user_data.get('Customer_ID', None)
     customer_name = user_data.get('Name', '')
     customer_surname = user_data.get('Surname', '')
@@ -152,26 +153,26 @@ def chat():
     customer_percentuale_massa_grassa = user_data.get('PercentualeMassaGrassa', '')
     customer_dispendio_calorico = user_data.get('DispendioCalorico', '')
     customer_diet_type = user_data.get('DietType', '')
-    customer_macro_fase = user_data.get('MacroFase', '')
+    customer_macroblocco = user_data.get('Macroblocco', '')
     customer_week = user_data.get('Week', '')
     customer_day = user_data.get('Day', '')
     customer_distretto_carente1 = user_data.get('DistrettoCarente1', '')
     customer_distretto_carente2 = user_data.get('DistrettoCarente2', '')
     customer_exercise_selected = user_data.get('ExerciseSelected', '')
-    customer_contry = user_data.get('Contry', '')
+    customer_country = user_data.get('Country', '')
     customer_city = user_data.get('City', '')
     customer_province = user_data.get('Province', '')
     customer_sub_expire = user_data.get('subExpire', '')
     customer_sub_type = user_data.get('SubType', '')
 
-    # New fields
+    # Additional nutrition & test fields
     customer_kcal = user_data.get('Kcal', '')
     customer_fats = user_data.get('Fats', '')
     customer_proteins = user_data.get('Proteins', '')
     customer_carbs = user_data.get('Carbs', '')
     customer_settimana_test_esercizi = user_data.get('SettimanaTestEsercizi', '')
     customer_settimana_test_pesi = user_data.get('SettimanaTestPesi', '')
-    customer_workout_della_settimana = user_data.get('WorkoutDellaSettimana', {})
+    customer_workout_della_settimna = user_data.get('WorkoutDellaSettimna', {})
 
     if not customer_id:
         return jsonify({'reply': 'Please provide a valid Customer_ID.'}), 400
@@ -205,13 +206,13 @@ def chat():
                 "customer_percentuale_massa_grassa": customer_percentuale_massa_grassa,
                 "customer_dispendio_calorico": customer_dispendio_calorico,
                 "customer_diet_type": customer_diet_type,
-                "customer_macro_fase": customer_macro_fase,
+                "customer_macroblocco": customer_macroblocco,
                 "customer_week": customer_week,
                 "customer_day": customer_day,
                 "customer_distretto_carente1": customer_distretto_carente1,
                 "customer_distretto_carente2": customer_distretto_carente2,
                 "customer_exercise_selected": customer_exercise_selected,
-                "customer_contry": customer_contry,
+                "customer_country": customer_country,
                 "customer_city": customer_city,
                 "customer_province": customer_province,
                 "customer_sub_expire": customer_sub_expire,
@@ -222,7 +223,7 @@ def chat():
                 "customer_carbs": customer_carbs,
                 "customer_settimana_test_esercizi": customer_settimana_test_esercizi,
                 "customer_settimana_test_pesi": customer_settimana_test_pesi,
-                "customer_workout_della_settimana": customer_workout_della_settimana,
+                "customer_workout_della_settimna": customer_workout_della_settimna,
                 "conversation_history": recent_messages
             }
         })
@@ -260,7 +261,6 @@ def delete_history(customer_id):
         return jsonify({"status": "success", "message": "Conversation history deleted."}), 200
     else:
         return jsonify({"status": "error", "message": "No conversation history found for this user."}), 404
-
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):

@@ -14,12 +14,17 @@
   const customerPercentualeMassaGrassa = window.customerPercentualeMassaGrassa || null;
   const customerDispendioCalorico = window.customerDispendioCalorico || null;
   const customerDietType = window.customerDietType || null;
-  const customerMacroFase = window.customerMacroFase || null;
+
+  // NOTE: changed from `customerMacroFase` to `customerMacroblocco`
+  const customerMacroblocco = window.customerMacroblocco || null;
+
   const customerWeek = window.customerWeek || null;
   const customerDay = window.customerDay || null;
   const customerDistrettoCarente1 = window.customerDistrettoCarente1 || '';
   const customerDistrettoCarente2 = window.customerDistrettoCarente2 || '';
   const customerExerciseSelected = window.customerExerciseSelected || false;
+
+  // NOTE: still spelled as "Contry" to match Flask side
   const customerContry = window.customerContry || '';
   const customerCity = window.customerCity || '';
   const customerProvince = window.customerProvince || '';
@@ -33,7 +38,9 @@
   const customerCarbs = window.customerCarbs || null;
   const customerSettimanaTestEsercizi = window.customerSettimanaTestEsercizi || false;
   const customerSettimanaTestPesi = window.customerSettimanaTestPesi || false;
-  const customerWorkoutDellaSettimana = window.customerWorkoutDellaSettimana || {};
+
+  // NOTE: changed from customerWorkoutDellaSettimana to customerWorkoutDellaSettimna
+  const customerWorkoutDellaSettimna = window.customerWorkoutDellaSettimna || {};
 
   // Flags
   let isChatOpen = false;
@@ -268,7 +275,10 @@
         PercentualeMassaGrassa: customerPercentualeMassaGrassa,
         DispendioCalorico: customerDispendioCalorico,
         DietType: customerDietType,
-        MacroFase: customerMacroFase,
+
+        // Renamed to match the updated Flask code:
+        Macroblocco: customerMacroblocco,
+
         Week: customerWeek,
         Day: customerDay,
         DistrettoCarente1: customerDistrettoCarente1,
@@ -279,6 +289,7 @@
         Province: customerProvince,
         subExpire: customerSubExpire,
         SubType: customerSubType,
+
         // NEW FIELDS
         Kcal: customerKcal,
         Fats: customerFats,
@@ -286,7 +297,9 @@
         Carbs: customerCarbs,
         SettimanaTestEsercizi: customerSettimanaTestEsercizi,
         SettimanaTestPesi: customerSettimanaTestPesi,
-        WorkoutDellaSettimana: customerWorkoutDellaSettimana
+
+        // Key renamed to match updated Python side
+        WorkoutDellaSettimna: customerWorkoutDellaSettimna
       }
     };
 
