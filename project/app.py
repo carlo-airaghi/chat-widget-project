@@ -51,7 +51,6 @@ index_pdf_documents(pdf_dir)
 # Updated prompt template including all fields
 prompt_template = """
 Reply in italian 
-Don't reply in markdown proposing text in bold with **<text>** or similar stuff, reply just as plain text, the result will be used as a chat message.
 Use the following customer data to contextualize the answer:
 
 Customer ID: {{customer_id}}
@@ -258,9 +257,10 @@ def delete_history(customer_id):
     """
     if customer_id in conversation_histories:
         del conversation_histories[customer_id]
-        return jsonify({"status": "success", "message": "Conversation history deleted."}), 200
+        # Importante: restituiamo 'success' per allinearlo con la verifica JS del tuo collega
+        return jsonify({"success": True, "message": "Conversation history deleted."}), 200
     else:
-        return jsonify({"status": "error", "message": "No conversation history found for this user."}), 404
+        return jsonify({"success": False, "message": "No conversation history found for this user."}), 404
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
