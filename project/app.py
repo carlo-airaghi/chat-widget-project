@@ -11,116 +11,138 @@ from haystack.components.builders.prompt_builder import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
 from haystack.components.converters import PyPDFToDocument
 
+# Custom PromptBuilder che ignora la validazione degli input extra
+class LenientPromptBuilder(PromptBuilder):
+    def validate_inputs(self, **kwargs):
+        # Sovrascriviamo il metodo di validazione per non lanciare errori per input extra.
+        return
+
+    def build_prompt(self, **inputs):
+        # Filtra solo le chiavi usate nel template, così eventuali valori mancanti non verranno considerati
+        allowed_keys = set(self.template_variables) if hasattr(self, "template_variables") else set()
+        filtered_inputs = {k: v for k, v in inputs.items() if k in allowed_keys}
+        return super().build_prompt(**filtered_inputs)
+
 widget_name = 'static_theapeshape'
 
 app = Flask(__name__, static_folder=widget_name)
 CORS(app)
 
-# Read the API key from environment variables
+# Legge l'API key dalle variabili d'ambiente
 api_key = os.environ.get('OPENAI_API_KEY')
 if not api_key:
     raise ValueError("No OPENAI_API_KEY found in environment variables.")
 
-# Set up the in-memory document store
+# Setup del document store in memoria
 document_store = InMemoryDocumentStore()
 
-# Define the directory containing PDFs (within the 'static_theapeshape/documents' folder)
+# Directory contenente i PDF (dentro 'static_theapeshape/documents')
 pdf_dir = Path(app.static_folder) / 'documents'
 
 def index_pdf_documents(directory: Path):
     """
-    Converts all PDFs in the specified directory to Document objects
-    and writes them to the in-memory document store.
+    Converte tutti i PDF nella directory in Document e li scrive nel document store.
     """
     converter = PyPDFToDocument()
     documents = []
     for pdf_file in directory.glob('*.pdf'):
-        # Convert PDF to Document
         result = converter.run(sources=[pdf_file])
         docs = result.get('documents', [])
-        # Add metadata to each document
         for doc in docs:
             doc.meta['filename'] = pdf_file.name
         documents.extend(docs)
-    # Write documents into the document store
     document_store.write_documents(documents)
 
-# Index all PDFs at startup
+# Indicizza tutti i PDF all'avvio
 index_pdf_documents(pdf_dir)
 
-# Updated prompt template including all fields
+# Template per il prompt (lo stesso di prima)
 prompt_template = """
-Reply in italian 
-Use the following customer data to contextualize the answer:
+Reply in Italian.
 
-Customer ID: {{customer_id}}
-Name: {{customer_name}}
-Surname: {{customer_surname}}
-Age: {{customer_age}}
-Gender (Sesso): {{customer_sesso}}
-Weight: {{customer_weight}}
-Height: {{customer_height}}
-Body Fat % (PercentualeMassaGrassa): {{customer_percentuale_massa_grassa}}
-Caloric Expenditure (DispendioCalorico): {{customer_dispendio_calorico}}
-I valori del dispendio calorico hanno il seguente significato
-- circa 1.2 => Nessun allenamento, cammini poco e lavori da seduto. Circa 4000 passi al giorno; 
-- circa 1.35 => Allenamento 3 volte a settimana, cammini poco e lavori da seduto. Da 4000 a 8000 passi al giorno; 
-- circa 1.58 => Allenamento 3 o 4 volte a settimana, cammini abbastanza e lavori in piedi. Da 8000 a 12000 passi al giorno; 
-- circa 1.78 => Allenamento 4 volte o più a settimana, cammini molto e lavori in piedi. Da 12000 a 16000 passi al giorno.
+### Dati del Cliente
+- **ID**: {{customer_id}}
+- **Nome e Cognome**: {{customer_name}} {{customer_surname}}
+- **Età**: {{customer_age}}
+- **Sesso**: {{customer_sesso}}
+- **Peso**: {{customer_weight}}
+- **Altezza**: {{customer_height}}
+- **Distretto Carente 1**: {{customer_distretto_carente1}}
+- **Distretto Carente 2**: {{customer_distretto_carente2}}
+- **Percentuale Massa Grassa**: {{customer_percentuale_massa_grassa}}
+- **Dispendio Calorico**: {{customer_dispendio_calorico}}
+  - **Valori di riferimento**:
+    - circa 1.2: Nessun allenamento, cammini poco, lavori da seduto (circa 4000 passi/giorno);
+    - circa 1.35: Allenamento 3 volte a settimana, cammini poco, lavori da seduto (4000-8000 passi/giorno);
+    - circa 1.58: Allenamento 3-4 volte a settimana, cammini abbastanza, lavori in piedi (8000-12000 passi/giorno);
+    - circa 1.78: Allenamento 4 o più volte a settimana, cammini molto, lavori in piedi (12000-16000 passi/giorno).
 
-Diet Type: {{customer_diet_type}}
-- 1 => Perdere massa grassa
-- 2 => Aumentare massa magra
+### Dieta
+- **Tipo di Dieta**: {{customer_diet_type}}
+  - 1 => Perdere massa grassa  
+  - 2 => Aumentare massa magra
+- **Istruzioni Dieta**:
+  - Prima di proporre una dieta, chiedi al cliente se ha patologie o condizioni mediche rilevanti.
+  - Se suggerisci una dieta, basati sul documento "alimentazione".
+  - Per domande relative a una dieta completa, informa il cliente che è possibile prenotare un appuntamento con il nutrizionista nella sezione "Macro".
 
-Macroblocco: {{customer_macroblocco}} (indica il blocco di tredici settimane in cui si trova il cliente)
-Week: {{customer_week}}
-Day: {{customer_day}}
-DistrettoCarente1: {{customer_distretto_carente1}}
-DistrettoCarente2: {{customer_distretto_carente2}}
-ExerciseSelected: {{customer_exercise_selected}}
-Country: {{customer_country}}
-City: {{customer_city}}
-Province: {{customer_province}}
-Subscription Expiration (subExpire): {{customer_sub_expire}}
-Subscription Type (SubType): {{customer_sub_type}}
-- 0 => prova gratuita
-- 1 => mensile
-- 2 => trimestrale
-- 3 => annuale
+### Programma di Allenamento
+- **Macroblocco**: {{customer_macroblocco}} (blocco di 13 settimane)
+- **Settimana**: {{customer_week}}
+- **Giorno**: {{customer_day}}
+- **Esercizio Selezionato**: {{customer_exercise_selected}}
+- **Istruzioni Allenamento**:
+  - Suggerisci **soltanto esercizi presenti nell'app**, consultando il documento "lista esercizi".
+  - Se il cliente esprime reticenza a causa di un infortunio, invitalo a eseguire l'esercizio per valutare la presenza di dolore.
+    - Se il dolore risulta non gestibile, proponi un esercizio alternativo secondo le indicazioni del documento "allenamento".
 
-Additional Nutritional Data:
-- Kcal: {{customer_kcal}}
-- Fats (g): {{customer_fats}}
-- Proteins (g): {{customer_proteins}}
-- Carbs (g): {{customer_carbs}}
+### Dati Nutrizionali Aggiuntivi
+- **Kcal**: {{customer_kcal}}
+- **Grassi (g)**: {{customer_fats}}
+- **Proteine (g)**: {{customer_proteins}}
+- **Carboidrati (g)**: {{customer_carbs}}
 
-Test Settings:
-- SettimanaTestEsercizi: {{customer_settimana_test_esercizi}}
-- SettimanaTestPesi: {{customer_settimana_test_pesi}}
+### Impostazioni di Test
+- **Settimana Test Esercizi**: {{customer_settimana_test_esercizi}}
+- **Settimana Test Pesi**: {{customer_settimana_test_pesi}}
+- **Workout della Settimana (se rilevante)**:
+  {{customer_workout_della_settimna}}
 
-WorkoutDellaSettimna (if relevant):
-{{customer_workout_della_settimna}}
+### Abbonamento e Localizzazione
+- **Luogo**: {{customer_city}}, {{customer_province}}, {{customer_country}}
+- **Abbonamento**:
+  - **Scadenza**: {{customer_sub_expire}}
+  - **Tipo**: {{customer_sub_type}}
+    - 0 => Prova gratuita
+    - 1 => Mensile
+    - 2 => Trimestrale
+    - 3 => Annuale
 
-Here are the last messages of the conversation (from oldest to newest):
+### Cronologia Conversazione
+Ultimi messaggi (dal più vecchio al più recente):
 {% for msg in conversation_history %}
 - {{msg.role}}: {{msg.content}}
 {% endfor %}
 
-Given these documents, answer the question.
-Documents:
+### Documenti di Riferimento
+I seguenti documenti contengono le informazioni necessarie:
 {% for doc in documents %}
-    {{ doc.content }}
+- {{ doc.content }}
 {% endfor %}
 
+### Domanda
 Question: {{question}}
-Answer:
+
+---
+
+Provide a detailed answer taking into account all the above data and instructions.
 """
 
+# Istanzio i componenti della pipeline usando il prompt builder leniente
 retriever = InMemoryBM25Retriever(document_store=document_store)
-prompt_builder = PromptBuilder(template=prompt_template)
+prompt_builder = LenientPromptBuilder(template=prompt_template)
 llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
 
-# Create a pipeline that retrieves documents, builds a prompt, then calls the LLM
 rag_pipeline = Pipeline()
 rag_pipeline.add_component("retriever", retriever)
 rag_pipeline.add_component("prompt_builder", prompt_builder)
@@ -128,57 +150,50 @@ rag_pipeline.add_component("llm", llm)
 rag_pipeline.connect("retriever", "prompt_builder.documents")
 rag_pipeline.connect("prompt_builder", "llm")
 
-# A dictionary to store conversation histories in memory
 conversation_histories = {}
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """
-    Receives JSON data (with 'message' and 'user' fields), processes it, 
-    and returns an AI-generated response.
-    """
     data = request.get_json()
     question = data.get('message', '')
     user_data = data.get('user', {})
 
-    # Extract fields
-    customer_id = user_data.get('Customer_ID', None)
-    customer_name = user_data.get('Name', '')
-    customer_surname = user_data.get('Surname', '')
-    customer_age = user_data.get('Age', '')
-    customer_sesso = user_data.get('Sesso', '')
-    customer_weight = user_data.get('Weight', '')
-    customer_height = user_data.get('Height', '')
-    customer_percentuale_massa_grassa = user_data.get('PercentualeMassaGrassa', '')
-    customer_dispendio_calorico = user_data.get('DispendioCalorico', '')
-    customer_diet_type = user_data.get('DietType', '')
-    customer_macroblocco = user_data.get('Macroblocco', '')
-    customer_week = user_data.get('Week', '')
-    customer_day = user_data.get('Day', '')
-    customer_distretto_carente1 = user_data.get('DistrettoCarente1', '')
-    customer_distretto_carente2 = user_data.get('DistrettoCarente2', '')
-    customer_exercise_selected = user_data.get('ExerciseSelected', '')
-    customer_country = user_data.get('Country', '')
-    customer_city = user_data.get('City', '')
-    customer_province = user_data.get('Province', '')
-    customer_sub_expire = user_data.get('subExpire', '')
-    customer_sub_type = user_data.get('SubType', '')
+    customer_id = user_data.get('Customer_ID') or None
+    customer_name = user_data.get('Name') or ''
+    customer_surname = user_data.get('Surname') or ''
+    customer_age = user_data.get('Age') or ''
+    customer_sesso = user_data.get('Sesso') or ''
+    customer_weight = user_data.get('Weight') or ''
+    customer_height = user_data.get('Height') or ''
+    customer_percentuale_massa_grassa = user_data.get('PercentualeMassaGrassa') or ''
+    customer_dispendio_calorico = user_data.get('DispendioCalorico') or ''
+    customer_diet_type = user_data.get('DietType') or ''
+    customer_macroblocco = user_data.get('Macroblocco') or ''
+    customer_week = user_data.get('Week') or ''
+    customer_day = user_data.get('Day') or ''
+    # Anche se vengono passati questi campi extra, il nostro prompt builder leniente li ignorerà.
+    customer_exercise_selected = user_data.get('ExerciseSelected') or ''
+    customer_country = user_data.get('Country') or ''
+    customer_city = user_data.get('City') or ''
+    customer_province = user_data.get('Province') or ''
+    customer_sub_expire = user_data.get('subExpire') or ''
+    customer_sub_type = user_data.get('SubType') or ''
 
-    # Additional nutrition & test fields
-    customer_kcal = user_data.get('Kcal', '')
-    customer_fats = user_data.get('Fats', '')
-    customer_proteins = user_data.get('Proteins', '')
-    customer_carbs = user_data.get('Carbs', '')
-    customer_settimana_test_esercizi = user_data.get('SettimanaTestEsercizi', '')
-    customer_settimana_test_pesi = user_data.get('SettimanaTestPesi', '')
-    customer_workout_della_settimna = user_data.get('WorkoutDellaSettimna', {})
+    customer_kcal = user_data.get('Kcal') or ''
+    customer_fats = user_data.get('Fats') or ''
+    customer_proteins = user_data.get('Proteins') or ''
+    customer_carbs = user_data.get('Carbs') or ''
+    customer_settimana_test_esercizi = user_data.get('SettimanaTestEsercizi') or ''
+    customer_settimana_test_pesi =user_data.get('SettimanaTestPesi') or ''
+    customer_workout_della_settimna = user_data.get('WorkoutDellaSettimna') or {}
+    customer_distretto_carente1 = user_data.get('customerDistrettoCarente1') or ''
+    customer_distretto_carente2 = user_data.get('customerDistrettoCarente2') or ''
 
     if not customer_id:
         return jsonify({'reply': 'Please provide a valid Customer_ID.'}), 400
     if not question:
         return jsonify({'reply': 'Please provide a message.'}), 400
 
-    # Maintain conversation history
     if customer_id not in conversation_histories:
         conversation_histories[customer_id] = []
     conversation_histories[customer_id].append({"role": "user", "content": question})
@@ -188,7 +203,6 @@ def chat():
     recent_messages = conversation_histories[customer_id]
 
     try:
-        # Run pipeline
         results = rag_pipeline.run({
             "retriever": {
                 "query": question
@@ -208,8 +222,6 @@ def chat():
                 "customer_macroblocco": customer_macroblocco,
                 "customer_week": customer_week,
                 "customer_day": customer_day,
-                "customer_distretto_carente1": customer_distretto_carente1,
-                "customer_distretto_carente2": customer_distretto_carente2,
                 "customer_exercise_selected": customer_exercise_selected,
                 "customer_country": customer_country,
                 "customer_city": customer_city,
@@ -223,13 +235,14 @@ def chat():
                 "customer_settimana_test_esercizi": customer_settimana_test_esercizi,
                 "customer_settimana_test_pesi": customer_settimana_test_pesi,
                 "customer_workout_della_settimna": customer_workout_della_settimna,
-                "conversation_history": recent_messages
+                "conversation_history": recent_messages,
+                "customer_distretto_carente1": customer_distretto_carente1,
+                "customer_distretto_carente2": customer_distretto_carente2
             }
         })
 
         reply = results["llm"]["replies"][0]
 
-        # Append the AI response
         conversation_histories[customer_id].append({"role": "assistant", "content": reply})
         if len(conversation_histories[customer_id]) > 10:
             conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
@@ -242,31 +255,20 @@ def chat():
 
 @app.route('/history/<customer_id>', methods=['GET'])
 def get_conversation_history(customer_id):
-    """
-    Returns the conversation history for the specified customer_id.
-    If none is found, it returns an empty list.
-    """
     if customer_id not in conversation_histories:
         return jsonify({"history": []}), 200
     return jsonify({"history": conversation_histories[customer_id]}), 200
 
 @app.route('/deleteHistory/<customer_id>', methods=['DELETE'])
 def delete_history(customer_id):
-    """
-    Deletes (resets) the conversation history for the specified customer_id.
-    """
     if customer_id in conversation_histories:
         del conversation_histories[customer_id]
-        # Importante: restituiamo 'success' per allinearlo con la verifica JS del tuo collega
         return jsonify({"success": True, "message": "Conversation history deleted."}), 200
     else:
         return jsonify({"success": False, "message": "No conversation history found for this user."}), 404
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
-    """
-    Serves static files (images, CSS, PDFs, etc.) from the 'static_theapeshape' folder.
-    """
     return send_from_directory(app.static_folder, filename)
 
 if __name__ == '__main__':

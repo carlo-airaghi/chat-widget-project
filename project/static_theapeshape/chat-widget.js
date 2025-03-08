@@ -76,7 +76,7 @@
 
   const headerText = document.createElement('span');
   headerText.id = 'chat-widget-header-text';
-  headerText.innerText = 'Coach Virtuale';
+  headerText.innerText = 'EverCoach';
 
   const minimizeButton = document.createElement('img');
   minimizeButton.id = 'chat-widget-minimize-button';
