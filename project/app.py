@@ -9,8 +9,7 @@ from haystack.document_stores.in_memory import InMemoryDocumentStore
 from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
 from haystack.components.builders.prompt_builder import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
-from haystack.components.converters import PyPDFToDocument
-from haystack.components.converters import CSVToDocument
+from haystack.components.converters import PyPDFToDocument, CSVToDocument
 
 # Custom PromptBuilder che ignora la validazione degli input extra
 class LenientPromptBuilder(PromptBuilder):
@@ -72,7 +71,7 @@ def index_csv_documents(directory: Path):
 index_pdf_documents(files_dir)
 index_csv_documents(files_dir)
 
-# Template per il prompt (aggiornato per enfatizzare il CSV "Valori Nutrizionali Crudo")
+# Template per il prompt con Chain-of-Thought integrato
 prompt_template = """
 Rispondi in Italiano
 
@@ -93,7 +92,7 @@ Rispondi in Italiano
     - circa 1.58: Allenamento 3-4 volte a settimana, cammini abbastanza, lavori in piedi (8000-12000 passi/giorno);
     - circa 1.78: Allenamento 4 o più volte a settimana, cammini molto, lavori in piedi (12000-16000 passi/giorno).
 
-### Dati Nutrizionali Aggiuntivi
+### Dati Nutrizionali e Istruzioni per la Dieta
 - **Kcal**: {{customer_kcal}}
 - **Grassi (g)**: {{customer_fats}}
 - **Proteine (g)**: {{customer_proteins}}
@@ -105,11 +104,26 @@ Rispondi in Italiano
   - 2 => Aumentare massa magra
 - **Istruzioni Dieta**:
   - Prima di proporre una dieta, chiedi al cliente se ha patologie o condizioni mediche rilevanti.
-  - Se suggerisci una dieta, basati sul documento "alimentazione" e **assicurati che la dieta sia formulata in base ai seguenti valori nutrizionali associati al cliente:**: {{customer_kcal}} Kcal, {{customer_fats}} g di Grassi, {{customer_proteins}} g di Proteine, {{customer_carbs}} g di Carboidrati.
-  - In particolare
-  - **Per i valori nutrizionali degli alimenti che compongono i pasti della dieta, fai riferimento esclusivamente al file "Valori Nutrizionali Crudo" (ad es. 'valori_nutrizionali_crudo.csv') e utilizza solo i dati presenti in esso, senza inventare.**
-  - Non menzionare mai la fonte dei dati
-  - Per domande relative a una dieta completa, informa il cliente che è possibile prenotare un appuntamento con il nutrizionista nella sezione "Macro".
+  - Basati sul documento "alimentazione" e **assicurati che la dieta sia formulata in base ai seguenti valori nutrizionali associati al cliente:** {{customer_kcal}} Kcal, {{customer_fats}} g di Grassi, {{customer_proteins}} g di Proteine, {{customer_carbs}} g di Carboidrati.
+  - Per i valori nutrizionali degli alimenti che compongono i pasti, fai riferimento esclusivamente al file "Valori Nutrizionali Crudo" (ad es. 'valori_nutrizionali_crudo.csv') e utilizza solo i dati presenti in esso, senza inventare.
+  - Non menzionare mai la fonte dei dati.
+  - Per una dieta completa, informa il cliente che è possibile prenotare un appuntamento con il nutrizionista nella sezione "Macro".
+
+### Chain-of-Thought: Generazione e Verifica Dieta (solo in caso sia richiesta una dieta da parte del cliente)
+1. **Generazione della Dieta:** Utilizza i dati e le istruzioni sopra per generare una dieta quotidiana.
+2. **Calcolo dei Totali:** Somma i valori di Kcal, Grassi, Proteine e Carboidrati per ciascun pasto per ottenere i totali giornalieri.
+3. **Confronto con i Target:** Confronta i totali calcolati con i valori target:
+   - Kcal target: {{customer_kcal}}
+   - Grassi target: {{customer_fats}}
+   - Proteine target: {{customer_proteins}}
+   - Carboidrati target: {{customer_carbs}}
+4. **Verifica dell’Errore Percentuale:** Calcola la differenza percentuale per ogni nutriente. Se per ciascun nutriente l’errore supera il 5%, rivedi la composizione della dieta e ricalcola.
+5. **Sintesi:** Riassumi brevemente i calcoli effettuati e conferma se la dieta rispetta i vincoli nutrizionali entro il margine di errore accettato.
+
+Raggruppando in questo modo, il modello ha una visione completa e sequenziale del compito: dalla composizione della dieta fino alla verifica aritmetica, rendendo più probabile che l'output finale rispetti i vincoli numerici richiesti. Questo approccio strutturato aiuta anche nel debugging e nel successivo eventuale implementare un controllo post-generazione.
+
+Puoi integrare questa struttura nel tuo prompt per guidare il modello in maniera più efficace.
+
 
 ### Programma di Allenamento
 - **Macroblocco**: {{customer_macroblocco}} (blocco di 13 settimane)
@@ -124,7 +138,7 @@ Rispondi in Italiano
 ### Impostazioni di Test
 - **Settimana Test Esercizi**: {{customer_settimana_test_esercizi}}
 - **Settimana Test Pesi**: {{customer_settimana_test_pesi}}
-- **Workout della Settimana (se rilevante)**:
+- **Workout della Settimna (se rilevante)**:
   {{customer_workout_della_settimna}}
 
 ### Abbonamento e Localizzazione
@@ -152,7 +166,6 @@ I seguenti documenti contengono le informazioni necessarie:
 ### Domanda
 Domanda: {{question}}
 
----
 
 Fornisci una risposta esauriente, ma sintetica tenendo conto di tutti i dati e le informazioni di cui sopra.
 """
@@ -160,7 +173,8 @@ Fornisci una risposta esauriente, ma sintetica tenendo conto di tutti i dati e l
 # Istanzio i componenti della pipeline usando il prompt builder leniente
 retriever = InMemoryBM25Retriever(document_store=document_store)
 prompt_builder = LenientPromptBuilder(template=prompt_template)
-llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
+# Utilizzo del modello o3-mini per una generazione efficiente
+llm = OpenAIGenerator(api_key=Secret.from_token(api_key), model="o3-mini")
 
 rag_pipeline = Pipeline()
 rag_pipeline.add_component("retriever", retriever)
@@ -190,14 +204,12 @@ def chat():
     customer_macroblocco = user_data.get('Macroblocco') or ''
     customer_week = user_data.get('Week') or ''
     customer_day = user_data.get('Day') or ''
-    # Anche se vengono passati questi campi extra, il nostro prompt builder leniente li ignorerà.
     customer_exercise_selected = user_data.get('ExerciseSelected') or ''
     customer_country = user_data.get('Country') or ''
     customer_city = user_data.get('City') or ''
     customer_province = user_data.get('Province') or ''
     customer_sub_expire = user_data.get('subExpire') or ''
     customer_sub_type = user_data.get('SubType') or ''
-
     customer_kcal = user_data.get('Kcal') or ''
     customer_fats = user_data.get('Fats') or ''
     customer_proteins = user_data.get('Proteins') or ''
