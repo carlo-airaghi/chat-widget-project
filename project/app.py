@@ -10,6 +10,7 @@ from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
 from haystack.components.builders.prompt_builder import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
 from haystack.components.converters import PyPDFToDocument
+from haystack.components.converters import CSVToDocument
 
 # Custom PromptBuilder che ignora la validazione degli input extra
 class LenientPromptBuilder(PromptBuilder):
@@ -36,8 +37,8 @@ if not api_key:
 # Setup del document store in memoria
 document_store = InMemoryDocumentStore()
 
-# Directory contenente i PDF (dentro 'static_theapeshape/documents')
-pdf_dir = Path(app.static_folder) / 'documents'
+# Directory contenente i PDF e i CSV (dentro 'static_theapeshape/documents')
+files_dir = Path(app.static_folder) / 'documents'
 
 def index_pdf_documents(directory: Path):
     """
@@ -53,12 +54,27 @@ def index_pdf_documents(directory: Path):
         documents.extend(docs)
     document_store.write_documents(documents)
 
-# Indicizza tutti i PDF all'avvio
-index_pdf_documents(pdf_dir)
+def index_csv_documents(directory: Path):
+    """
+    Converte tutti i CSV nella directory in Document e li scrive nel document store.
+    """
+    converter = CSVToDocument()
+    documents = []
+    for csv_file in directory.glob('*.csv'):
+        result = converter.run(sources=[csv_file])
+        docs = result.get('documents', [])
+        for doc in docs:
+            doc.meta['filename'] = csv_file.name
+        documents.extend(docs)
+    document_store.write_documents(documents)
 
-# Template per il prompt (lo stesso di prima)
+# Indicizza tutti i PDF e i CSV all'avvio
+index_pdf_documents(files_dir)
+index_csv_documents(files_dir)
+
+# Template per il prompt (aggiornato per enfatizzare il CSV "Valori Nutrizionali Crudo")
 prompt_template = """
-Reply in Italian.
+Rispondi in Italiano
 
 ### Dati del Cliente
 - **ID**: {{customer_id}}
@@ -77,13 +93,22 @@ Reply in Italian.
     - circa 1.58: Allenamento 3-4 volte a settimana, cammini abbastanza, lavori in piedi (8000-12000 passi/giorno);
     - circa 1.78: Allenamento 4 o più volte a settimana, cammini molto, lavori in piedi (12000-16000 passi/giorno).
 
+### Dati Nutrizionali Aggiuntivi
+- **Kcal**: {{customer_kcal}}
+- **Grassi (g)**: {{customer_fats}}
+- **Proteine (g)**: {{customer_proteins}}
+- **Carboidrati (g)**: {{customer_carbs}}
+
 ### Dieta
 - **Tipo di Dieta**: {{customer_diet_type}}
   - 1 => Perdere massa grassa  
   - 2 => Aumentare massa magra
 - **Istruzioni Dieta**:
   - Prima di proporre una dieta, chiedi al cliente se ha patologie o condizioni mediche rilevanti.
-  - Se suggerisci una dieta, basati sul documento "alimentazione".
+  - Se suggerisci una dieta, basati sul documento "alimentazione" e **assicurati che la dieta sia formulata in base ai seguenti valori nutrizionali associati al cliente:**: {{customer_kcal}} Kcal, {{customer_fats}} g di Grassi, {{customer_proteins}} g di Proteine, {{customer_carbs}} g di Carboidrati.
+  - In particolare
+  - **Per i valori nutrizionali degli alimenti che compongono i pasti della dieta, fai riferimento esclusivamente al file "Valori Nutrizionali Crudo" (ad es. 'valori_nutrizionali_crudo.csv') e utilizza solo i dati presenti in esso, senza inventare.**
+  - Non menzionare mai la fonte dei dati
   - Per domande relative a una dieta completa, informa il cliente che è possibile prenotare un appuntamento con il nutrizionista nella sezione "Macro".
 
 ### Programma di Allenamento
@@ -95,12 +120,6 @@ Reply in Italian.
   - Suggerisci **soltanto esercizi presenti nell'app**, consultando il documento "lista esercizi".
   - Se il cliente esprime reticenza a causa di un infortunio, invitalo a eseguire l'esercizio per valutare la presenza di dolore.
     - Se il dolore risulta non gestibile, proponi un esercizio alternativo secondo le indicazioni del documento "allenamento".
-
-### Dati Nutrizionali Aggiuntivi
-- **Kcal**: {{customer_kcal}}
-- **Grassi (g)**: {{customer_fats}}
-- **Proteine (g)**: {{customer_proteins}}
-- **Carboidrati (g)**: {{customer_carbs}}
 
 ### Impostazioni di Test
 - **Settimana Test Esercizi**: {{customer_settimana_test_esercizi}}
@@ -131,11 +150,11 @@ I seguenti documenti contengono le informazioni necessarie:
 {% endfor %}
 
 ### Domanda
-Question: {{question}}
+Domanda: {{question}}
 
 ---
 
-Provide a detailed answer taking into account all the above data and instructions.
+Fornisci una risposta esauriente, ma sintetica tenendo conto di tutti i dati e le informazioni di cui sopra.
 """
 
 # Istanzio i componenti della pipeline usando il prompt builder leniente
@@ -184,7 +203,7 @@ def chat():
     customer_proteins = user_data.get('Proteins') or ''
     customer_carbs = user_data.get('Carbs') or ''
     customer_settimana_test_esercizi = user_data.get('SettimanaTestEsercizi') or ''
-    customer_settimana_test_pesi =user_data.get('SettimanaTestPesi') or ''
+    customer_settimana_test_pesi = user_data.get('SettimanaTestPesi') or ''
     customer_workout_della_settimna = user_data.get('WorkoutDellaSettimna') or {}
     customer_distretto_carente1 = user_data.get('customerDistrettoCarente1') or ''
     customer_distretto_carente2 = user_data.get('customerDistrettoCarente2') or ''
