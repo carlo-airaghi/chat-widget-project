@@ -173,8 +173,8 @@ Fornisci una risposta esauriente, ma sintetica tenendo conto di tutti i dati e l
 # Istanzio i componenti della pipeline usando il prompt builder leniente
 retriever = InMemoryBM25Retriever(document_store=document_store)
 prompt_builder = LenientPromptBuilder(template=prompt_template)
-# Utilizzo del modello o3-mini per una generazione efficiente
-llm = OpenAIGenerator(api_key=Secret.from_token(api_key), model="o3-mini")
+
+llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
 
 rag_pipeline = Pipeline()
 rag_pipeline.add_component("retriever", retriever)
