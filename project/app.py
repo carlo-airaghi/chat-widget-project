@@ -1,344 +1,53 @@
-import os
-from flask import Flask, request, jsonify, send_from_directory
+# app.py
+from flask import Flask
 from flask_cors import CORS
 from pathlib import Path
+import logging
 
-from haystack import Pipeline
-from haystack.utils import Secret
+# Import our modules.
+from config import Config
+from indexers import index_pdf_documents, index_csv_documents
+from pipelines import create_pipeline
+from utils import ConversationManager
 from haystack.document_stores.in_memory import InMemoryDocumentStore
-from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
-from haystack.components.builders.prompt_builder import PromptBuilder
-from haystack.components.generators import OpenAIGenerator
-from haystack.components.converters import PyPDFToDocument, CSVToDocument
+from routes import create_blueprint
 
-# Custom PromptBuilder that ignores extra input validation
-class LenientPromptBuilder(PromptBuilder):
-    def validate_inputs(self, **kwargs):
-        # Override validation method to ignore extra inputs.
-        return
+# Initialize logging.
+logging.basicConfig(level=logging.INFO)
 
-    def build_prompt(self, **inputs):
-        # Filter keys to only those used in the template so that missing values are ignored.
-        allowed_keys = set(self.template_variables) if hasattr(self, "template_variables") else set()
-        filtered_inputs = {k: v for k, v in inputs.items() if k in allowed_keys}
-        return super().build_prompt(**filtered_inputs)
-
-widget_name = 'static_theapeshape'
-
-app = Flask(__name__, static_folder=widget_name)
+# Create the Flask app and configure it.
+app = Flask(__name__, static_folder=Config.STATIC_FOLDER)
+app.config.from_object(Config)
 CORS(app)
 
-# Read the API key from environment variables.
-api_key = os.environ.get('OPENAI_API_KEY')
-if not api_key:
-    raise ValueError("No OPENAI_API_KEY found in environment variables.")
-
-# Setup the in-memory document store.
+# Initialize the in-memory document store.
 document_store = InMemoryDocumentStore()
 
-# Directory containing the PDF and CSV documents (inside 'static_theapeshape/documents')
-files_dir = Path(app.static_folder) / 'documents'
+# Index all PDF and CSV documents on startup.
+index_pdf_documents(Config.DOCUMENTS_FOLDER, document_store)
+index_csv_documents(Config.DOCUMENTS_FOLDER, document_store)
 
-def index_pdf_documents(directory: Path):
-    """
-    Converts all PDFs in the directory to Documents and writes them to the document store.
-    """
-    converter = PyPDFToDocument()
-    documents = []
-    for pdf_file in directory.glob('*.pdf'):
-        result = converter.run(sources=[pdf_file])
-        docs = result.get('documents', [])
-        for doc in docs:
-            doc.meta['filename'] = pdf_file.name
-        documents.extend(docs)
-    document_store.write_documents(documents)
+# Read prompt templates from files in the prompts folder.
+prompts_folder = Config.PROMPTS_FOLDER
+prompt_template_path = prompts_folder / "prompt_template.txt"
+rephrase_prompt_template_path = prompts_folder / "rephrase_prompt_template.txt"
 
-def index_csv_documents(directory: Path):
-    """
-    Converts all CSVs in the directory to Documents and writes them to the document store.
-    """
-    converter = CSVToDocument()
-    documents = []
-    for csv_file in directory.glob('*.csv'):
-        result = converter.run(sources=[csv_file])
-        docs = result.get('documents', [])
-        for doc in docs:
-            doc.meta['filename'] = csv_file.name
-        documents.extend(docs)
-    document_store.write_documents(documents)
+with prompt_template_path.open("r", encoding="utf-8") as f:
+    prompt_template = f.read()
 
-# Index all PDF and CSV files at startup.
-index_pdf_documents(files_dir)
-index_csv_documents(files_dir)
+with rephrase_prompt_template_path.open("r", encoding="utf-8") as f:
+    rephrase_prompt_template = f.read()
 
-# Prompt template for the first pipeline (detailed answer with chain-of-thought)
-prompt_template = """
-Rispondi in Italiano
+# Create the pipelines.
+rag_pipeline = create_pipeline(prompt_template, Config.OPENAI_API_KEY, document_store)
+rephrase_pipeline = create_pipeline(rephrase_prompt_template, Config.OPENAI_API_KEY, document_store)
 
-### Dati del Cliente
-- **ID**: {{customer_id}}
-- **Nome e Cognome**: {{customer_name}} {{customer_surname}}
-- **Età**: {{customer_age}}
-- **Sesso**: {{customer_sesso}}
-- **Peso**: {{customer_weight}}
-- **Altezza**: {{customer_height}}
-- **Distretto Carente 1**: {{customer_distretto_carente1}}
-- **Distretto Carente 2**: {{customer_distretto_carente2}}
-- **Percentuale Massa Grassa**: {{customer_percentuale_massa_grassa}}
-- **Dispendio Calorico**: {{customer_dispendio_calorico}}
-  - **Valori di riferimento**:
-    - circa 1.2: Nessun allenamento, cammini poco, lavori da seduto (circa 4000 passi/giorno);
-    - circa 1.35: Allenamento 3 volte a settimana, cammini poco, lavori da seduto (4000-8000 passi/giorno);
-    - circa 1.58: Allenamento 3-4 volte a settimana, cammini abbastanza, lavori in piedi (8000-12000 passi/giorno);
-    - circa 1.78: Allenamento 4 o più volte a settimana, cammini molto, lavori in piedi (12000-16000 passi/giorno).
+# Initialize the conversation manager.
+conversation_manager = ConversationManager()
 
-### Dati Nutrizionali e Istruzioni per la Dieta
-- **Kcal**: {{customer_kcal}}
-- **Grassi (g)**: {{customer_fats}}
-- **Proteine (g)**: {{customer_proteins}}
-- **Carboidrati (g)**: {{customer_carbs}}
-
-### Dieta
-- **Tipo di Dieta**: {{customer_diet_type}}
-  - 1 => Perdere massa grassa  
-  - 2 => Aumentare massa magra
-- **Istruzioni Dieta**:
-  - Prima di proporre una dieta, chiedi al cliente se ha patologie o condizioni mediche rilevanti.
-  - Basati sul documento "alimentazione" e **assicurati che la dieta sia formulata in base ai seguenti valori nutrizionali associati al cliente:** {{customer_kcal}} Kcal, {{customer_fats}} g di Grassi, {{customer_proteins}} g di Proteine, {{customer_carbs}} g di Carboidrati.
-  - Per i valori nutrizionali degli alimenti che compongono i pasti, fai riferimento esclusivamente al file "Valori Nutrizionali Crudo" (ad es. 'valori_nutrizionali_crudo.csv') e utilizza solo i dati presenti in esso, senza inventare.
-  - Non menzionare mai la fonte dei dati.
-  - Per una dieta completa, informa il cliente che è possibile prenotare un appuntamento con il nutrizionista nella sezione "Macro".
-
-### Chain-of-Thought: Generazione e Verifica Dieta (solo in caso sia richiesta una dieta da parte del cliente)
-1. **Generazione della Dieta:** Utilizza i dati e le istruzioni sopra per generare una dieta quotidiana.
-2. **Calcolo dei Totali:** Somma i valori di Kcal, Grassi, Proteine e Carboidrati per ciascun pasto per ottenere i totali giornalieri.
-3. **Confronto con i Target:** Confronta i totali calcolati con i valori target:
-   - Kcal target: {{customer_kcal}}
-   - Grassi target: {{customer_fats}}
-   - Proteine target: {{customer_proteins}}
-   - Carboidrati target: {{customer_carbs}}
-4. **Verifica dell’Errore Percentuale:** Calcola la differenza percentuale per ogni nutriente. Se per ciascun nutriente l’errore supera il 5%, rivedi la composizione della dieta e ricalcola.
-5. **Sintesi:** Riassumi brevemente i calcoli effettuati e conferma se la dieta rispetta i vincoli nutrizionali entro il margine di errore accettato.
-
-Raggruppando in questo modo, il modello ha una visione completa e sequenziale del compito: dalla composizione della dieta fino alla verifica aritmetica, rendendo più probabile che l'output finale rispetti i vincoli numerici richiesti. Questo approccio strutturato aiuta anche nel debugging e nel successivo eventuale implementare un controllo post-generazione.
-
-### Programma di Allenamento
-- **Macroblocco**: {{customer_macroblocco}} (blocco di 13 settimane)
-- **Settimana**: {{customer_week}}
-- **Giorno**: {{customer_day}}
-- **Esercizio Selezionato**: {{customer_exercise_selected}}
-- **Istruzioni Allenamento**:
-  - Suggerisci **soltanto esercizi presenti nell'app**, consultando il documento "lista esercizi".
-  - Se il cliente esprime reticenza a causa di un infortunio, invitalo a eseguire l'esercizio per valutare la presenza di dolore.
-    - Se il dolore risulta non gestibile, proponi un esercizio alternativo secondo le indicazioni del documento "allenamento".
-
-### Impostazioni di Test
-- **Settimana Test Esercizi**: {{customer_settimana_test_esercizi}}
-- **Settimana Test Pesi**: {{customer_settimana_test_pesi}}
-- **Workout della Settimna (se rilevante)**:
-  {{customer_workout_della_settimna}}
-
-### Abbonamento e Localizzazione
-- **Luogo**: {{customer_city}}, {{customer_province}}, {{customer_country}}
-- **Abbonamento**:
-  - **Scadenza**: {{customer_sub_expire}}
-  - **Tipo**: {{customer_sub_type}}
-    - 0 => Prova gratuita
-    - 1 => Mensile
-    - 2 => Trimestrale
-    - 3 => Annuale
-
-### Cronologia Conversazione
-Ultimi messaggi (dal più vecchio al più recente):
-{% for msg in conversation_history %}
-- {{msg.role}}: {{msg.content}}
-{% endfor %}
-
-### Documenti di Riferimento
-I seguenti documenti contengono le informazioni necessarie:
-{% for doc in documents %}
-- {{ doc.content }}
-{% endfor %}
-
-### Domanda
-Domanda: {{question}}
-
-Fornisci una risposta esauriente, ma sintetica tenendo conto di tutti i dati e le informazioni di cui sopra.
-"""
-
-# Instantiate the components for the first pipeline using the lenient prompt builder.
-retriever = InMemoryBM25Retriever(document_store=document_store)
-prompt_builder = LenientPromptBuilder(template=prompt_template)
-llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
-
-rag_pipeline = Pipeline()
-rag_pipeline.add_component("retriever", retriever)
-rag_pipeline.add_component("prompt_builder", prompt_builder)
-rag_pipeline.add_component("llm", llm)
-rag_pipeline.connect("retriever", "prompt_builder.documents")
-rag_pipeline.connect("prompt_builder", "llm")
-
-# New prompt template for rephrasing and summarization.
-rephrase_prompt_template = """
-INIZIA SEMPRE LA RISPOSTA DICENDO: "SONO LILLO"
-Poi, per favore, riformula e riassumi il seguente testo mantenendo il significato originale in modo chiaro e conciso:
-
-Testo: {{answer}}
-
-Documenti correlati:
-{{documents}}
-
-Riassunto e riformulazione:
-"""
-
-
-# Instantiate the prompt builder for the rephrase pipeline.
-rephrase_prompt_builder = LenientPromptBuilder(template=rephrase_prompt_template)
-
-# Create a new retriever instance for the rephrase pipeline.
-rephrase_retriever = InMemoryBM25Retriever(document_store=document_store)
-llm_rephrase = OpenAIGenerator(api_key=Secret.from_token(api_key))
-
-# Create a new pipeline for rephrasing/summarization including the retriever.
-rephrase_pipeline = Pipeline()
-rephrase_pipeline.add_component("retriever", rephrase_retriever)
-rephrase_pipeline.add_component("prompt_builder", rephrase_prompt_builder)
-rephrase_pipeline.add_component("llm", llm_rephrase)
-rephrase_pipeline.connect("retriever", "prompt_builder.documents")
-rephrase_pipeline.connect("prompt_builder", "llm")
-
-# In-memory conversation histories.
-conversation_histories = {}
-
-@app.route('/chat', methods=['POST'])
-def chat():
-    data = request.get_json()
-    question = data.get('message', '')
-    user_data = data.get('user', {})
-
-    customer_id = user_data.get('Customer_ID') or None
-    customer_name = user_data.get('Name') or ''
-    customer_surname = user_data.get('Surname') or ''
-    customer_age = user_data.get('Age') or ''
-    customer_sesso = user_data.get('Sesso') or ''
-    customer_weight = user_data.get('Weight') or ''
-    customer_height = user_data.get('Height') or ''
-    customer_percentuale_massa_grassa = user_data.get('PercentualeMassaGrassa') or ''
-    customer_dispendio_calorico = user_data.get('DispendioCalorico') or ''
-    customer_diet_type = user_data.get('DietType') or ''
-    customer_macroblocco = user_data.get('Macroblocco') or ''
-    customer_week = user_data.get('Week') or ''
-    customer_day = user_data.get('Day') or ''
-    customer_exercise_selected = user_data.get('ExerciseSelected') or ''
-    customer_country = user_data.get('Country') or ''
-    customer_city = user_data.get('City') or ''
-    customer_province = user_data.get('Province') or ''
-    customer_sub_expire = user_data.get('subExpire') or ''
-    customer_sub_type = user_data.get('SubType') or ''
-    customer_kcal = user_data.get('Kcal') or ''
-    customer_fats = user_data.get('Fats') or ''
-    customer_proteins = user_data.get('Proteins') or ''
-    customer_carbs = user_data.get('Carbs') or ''
-    customer_settimana_test_esercizi = user_data.get('SettimanaTestEsercizi') or ''
-    customer_settimana_test_pesi = user_data.get('SettimanaTestPesi') or ''
-    customer_workout_della_settimna = user_data.get('WorkoutDellaSettimna') or {}
-    customer_distretto_carente1 = user_data.get('customerDistrettoCarente1') or ''
-    customer_distretto_carente2 = user_data.get('customerDistrettoCarente2') or ''
-
-    if not customer_id:
-        return jsonify({'reply': 'Please provide a valid Customer_ID.'}), 400
-    if not question:
-        return jsonify({'reply': 'Please provide a message.'}), 400
-
-    if customer_id not in conversation_histories:
-        conversation_histories[customer_id] = []
-    conversation_histories[customer_id].append({"role": "user", "content": question})
-    if len(conversation_histories[customer_id]) > 10:
-        conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
-
-    recent_messages = conversation_histories[customer_id]
-
-    try:
-        # First pipeline: obtain the detailed answer using ChatGPT-4.
-        results = rag_pipeline.run({
-            "retriever": {
-                "query": question
-            },
-            "prompt_builder": {
-                "question": question,
-                "customer_id": customer_id,
-                "customer_name": customer_name,
-                "customer_surname": customer_surname,
-                "customer_age": customer_age,
-                "customer_sesso": customer_sesso,
-                "customer_weight": customer_weight,
-                "customer_height": customer_height,
-                "customer_percentuale_massa_grassa": customer_percentuale_massa_grassa,
-                "customer_dispendio_calorico": customer_dispendio_calorico,
-                "customer_diet_type": customer_diet_type,
-                "customer_macroblocco": customer_macroblocco,
-                "customer_week": customer_week,
-                "customer_day": customer_day,
-                "customer_exercise_selected": customer_exercise_selected,
-                "customer_country": customer_country,
-                "customer_city": customer_city,
-                "customer_province": customer_province,
-                "customer_sub_expire": customer_sub_expire,
-                "customer_sub_type": customer_sub_type,
-                "customer_kcal": customer_kcal,
-                "customer_fats": customer_fats,
-                "customer_proteins": customer_proteins,
-                "customer_carbs": customer_carbs,
-                "customer_settimana_test_esercizi": customer_settimana_test_esercizi,
-                "customer_settimana_test_pesi": customer_settimana_test_pesi,
-                "customer_workout_della_settimna": customer_workout_della_settimna,
-                "conversation_history": recent_messages,
-                "customer_distretto_carente1": customer_distretto_carente1,
-                "customer_distretto_carente2": customer_distretto_carente2
-            }
-        })
-
-        # Get the initial detailed reply.
-        reply = results["llm"]["replies"][0]
-
-        # Second pipeline: rephrase and summarize the initial reply.
-        rephrase_results = rephrase_pipeline.run({
-            "retriever": {
-                "query": reply
-            },
-            "prompt_builder": {
-                "answer": reply
-            }
-        })
-        final_reply = rephrase_results["llm"]["replies"][0]
-
-        conversation_histories[customer_id].append({"role": "assistant", "content": final_reply})
-        if len(conversation_histories[customer_id]) > 10:
-            conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
-
-        return jsonify({'reply': final_reply})
-
-    except Exception as e:
-        print(f'Error: {e}')
-        return jsonify({'reply': 'Sorry, an error occurred. Please try again later.'})
-
-@app.route('/history/<customer_id>', methods=['GET'])
-def get_conversation_history(customer_id):
-    if customer_id not in conversation_histories:
-        return jsonify({"history": []}), 200
-    return jsonify({"history": conversation_histories[customer_id]}), 200
-
-@app.route('/deleteHistory/<customer_id>', methods=['DELETE'])
-def delete_history(customer_id):
-    if customer_id in conversation_histories:
-        del conversation_histories[customer_id]
-        return jsonify({"success": True, "message": "Conversation history deleted."}), 200
-    else:
-        return jsonify({"success": False, "message": "No conversation history found for this user."}), 404
-
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    return send_from_directory(app.static_folder, filename)
+# Register the Blueprint containing our routes.
+chat_bp = create_blueprint(rag_pipeline, rephrase_pipeline, conversation_manager)
+app.register_blueprint(chat_bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
