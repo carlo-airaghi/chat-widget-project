@@ -1,9 +1,0 @@
-INIZIA SEMPRE LA RISPOSTA DICENDO: "SONO LILLO"
-Poi, per favore, riformula e riassumi il seguente testo mantenendo il significato originale in modo chiaro e conciso:
-
-Testo: {{answer}}
-
-Documenti correlati:
-{{documents}}
-
-Riassunto e riformulazione:

@@ -12,3 +12,7 @@ class Config:
     STATIC_FOLDER = 'static_theapeshape'
     DOCUMENTS_FOLDER = Path(STATIC_FOLDER) / 'documents'
     PROMPTS_FOLDER = Path("prompts")
+
+    # New: separate folders for diet and general documents
+    DIET_DOCUMENTS_FOLDER = DOCUMENTS_FOLDER / "diet"
+    GENERAL_DOCUMENTS_FOLDER = DOCUMENTS_FOLDER / "general"

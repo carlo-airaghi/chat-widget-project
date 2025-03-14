@@ -19,13 +19,13 @@ class LenientPromptBuilder(PromptBuilder):
         filtered_inputs = {k: v for k, v in inputs.items() if k in allowed_keys}
         return super().build_prompt(**filtered_inputs)
 
-def create_pipeline(prompt_template: str, api_key: str, document_store):
+def create_pipeline(prompt_template: str, api_key: str, document_store, model_name: str):
     """
-    Creates a Haystack pipeline with the given prompt template, API key, and document store.
+    Creates a Haystack pipeline with the given prompt template, API key, document store, and model name.
     """
     retriever = InMemoryBM25Retriever(document_store=document_store)
     prompt_builder = LenientPromptBuilder(template=prompt_template)
-    llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
+    llm = OpenAIGenerator(api_key=Secret.from_token(api_key), model=model_name)
     
     pipeline = Pipeline()
     pipeline.add_component("retriever", retriever)
