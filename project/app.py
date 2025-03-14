@@ -11,14 +11,14 @@ from haystack.components.builders.prompt_builder import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
 from haystack.components.converters import PyPDFToDocument, CSVToDocument
 
-# Custom PromptBuilder che ignora la validazione degli input extra
+# Custom PromptBuilder that ignores extra input validation
 class LenientPromptBuilder(PromptBuilder):
     def validate_inputs(self, **kwargs):
-        # Sovrascriviamo il metodo di validazione per non lanciare errori per input extra.
+        # Override validation method to ignore extra inputs.
         return
 
     def build_prompt(self, **inputs):
-        # Filtra solo le chiavi usate nel template, così eventuali valori mancanti non verranno considerati
+        # Filter keys to only those used in the template so that missing values are ignored.
         allowed_keys = set(self.template_variables) if hasattr(self, "template_variables") else set()
         filtered_inputs = {k: v for k, v in inputs.items() if k in allowed_keys}
         return super().build_prompt(**filtered_inputs)
@@ -28,20 +28,20 @@ widget_name = 'static_theapeshape'
 app = Flask(__name__, static_folder=widget_name)
 CORS(app)
 
-# Legge l'API key dalle variabili d'ambiente
+# Read the API key from environment variables.
 api_key = os.environ.get('OPENAI_API_KEY')
 if not api_key:
     raise ValueError("No OPENAI_API_KEY found in environment variables.")
 
-# Setup del document store in memoria
+# Setup the in-memory document store.
 document_store = InMemoryDocumentStore()
 
-# Directory contenente i PDF e i CSV (dentro 'static_theapeshape/documents')
+# Directory containing the PDF and CSV documents (inside 'static_theapeshape/documents')
 files_dir = Path(app.static_folder) / 'documents'
 
 def index_pdf_documents(directory: Path):
     """
-    Converte tutti i PDF nella directory in Document e li scrive nel document store.
+    Converts all PDFs in the directory to Documents and writes them to the document store.
     """
     converter = PyPDFToDocument()
     documents = []
@@ -55,7 +55,7 @@ def index_pdf_documents(directory: Path):
 
 def index_csv_documents(directory: Path):
     """
-    Converte tutti i CSV nella directory in Document e li scrive nel document store.
+    Converts all CSVs in the directory to Documents and writes them to the document store.
     """
     converter = CSVToDocument()
     documents = []
@@ -67,11 +67,11 @@ def index_csv_documents(directory: Path):
         documents.extend(docs)
     document_store.write_documents(documents)
 
-# Indicizza tutti i PDF e i CSV all'avvio
+# Index all PDF and CSV files at startup.
 index_pdf_documents(files_dir)
 index_csv_documents(files_dir)
 
-# Template per il prompt con Chain-of-Thought integrato
+# Prompt template for the first pipeline (detailed answer with chain-of-thought)
 prompt_template = """
 Rispondi in Italiano
 
@@ -122,9 +122,6 @@ Rispondi in Italiano
 
 Raggruppando in questo modo, il modello ha una visione completa e sequenziale del compito: dalla composizione della dieta fino alla verifica aritmetica, rendendo più probabile che l'output finale rispetti i vincoli numerici richiesti. Questo approccio strutturato aiuta anche nel debugging e nel successivo eventuale implementare un controllo post-generazione.
 
-Puoi integrare questa struttura nel tuo prompt per guidare il modello in maniera più efficace.
-
-
 ### Programma di Allenamento
 - **Macroblocco**: {{customer_macroblocco}} (blocco di 13 settimane)
 - **Settimana**: {{customer_week}}
@@ -166,14 +163,12 @@ I seguenti documenti contengono le informazioni necessarie:
 ### Domanda
 Domanda: {{question}}
 
-
 Fornisci una risposta esauriente, ma sintetica tenendo conto di tutti i dati e le informazioni di cui sopra.
 """
 
-# Istanzio i componenti della pipeline usando il prompt builder leniente
+# Instantiate the components for the first pipeline using the lenient prompt builder.
 retriever = InMemoryBM25Retriever(document_store=document_store)
 prompt_builder = LenientPromptBuilder(template=prompt_template)
-
 llm = OpenAIGenerator(api_key=Secret.from_token(api_key))
 
 rag_pipeline = Pipeline()
@@ -183,6 +178,36 @@ rag_pipeline.add_component("llm", llm)
 rag_pipeline.connect("retriever", "prompt_builder.documents")
 rag_pipeline.connect("prompt_builder", "llm")
 
+# New prompt template for rephrasing and summarization.
+rephrase_prompt_template = """
+INIZIA SEMPRE LA RISPOSTA DICENDO: "SONO LILLO"
+Poi, per favore, riformula e riassumi il seguente testo mantenendo il significato originale in modo chiaro e conciso:
+
+Testo: {{answer}}
+
+Documenti correlati:
+{{documents}}
+
+Riassunto e riformulazione:
+"""
+
+
+# Instantiate the prompt builder for the rephrase pipeline.
+rephrase_prompt_builder = LenientPromptBuilder(template=rephrase_prompt_template)
+
+# Create a new retriever instance for the rephrase pipeline.
+rephrase_retriever = InMemoryBM25Retriever(document_store=document_store)
+llm_rephrase = OpenAIGenerator(api_key=Secret.from_token(api_key))
+
+# Create a new pipeline for rephrasing/summarization including the retriever.
+rephrase_pipeline = Pipeline()
+rephrase_pipeline.add_component("retriever", rephrase_retriever)
+rephrase_pipeline.add_component("prompt_builder", rephrase_prompt_builder)
+rephrase_pipeline.add_component("llm", llm_rephrase)
+rephrase_pipeline.connect("retriever", "prompt_builder.documents")
+rephrase_pipeline.connect("prompt_builder", "llm")
+
+# In-memory conversation histories.
 conversation_histories = {}
 
 @app.route('/chat', methods=['POST'])
@@ -234,6 +259,7 @@ def chat():
     recent_messages = conversation_histories[customer_id]
 
     try:
+        # First pipeline: obtain the detailed answer using ChatGPT-4.
         results = rag_pipeline.run({
             "retriever": {
                 "query": question
@@ -272,13 +298,25 @@ def chat():
             }
         })
 
+        # Get the initial detailed reply.
         reply = results["llm"]["replies"][0]
 
-        conversation_histories[customer_id].append({"role": "assistant", "content": reply})
+        # Second pipeline: rephrase and summarize the initial reply.
+        rephrase_results = rephrase_pipeline.run({
+            "retriever": {
+                "query": reply
+            },
+            "prompt_builder": {
+                "answer": reply
+            }
+        })
+        final_reply = rephrase_results["llm"]["replies"][0]
+
+        conversation_histories[customer_id].append({"role": "assistant", "content": final_reply})
         if len(conversation_histories[customer_id]) > 10:
             conversation_histories[customer_id] = conversation_histories[customer_id][-10:]
 
-        return jsonify({'reply': reply})
+        return jsonify({'reply': final_reply})
 
     except Exception as e:
         print(f'Error: {e}')
