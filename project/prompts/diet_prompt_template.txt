@@ -90,20 +90,18 @@ Domanda: {{question}}
   - Enfatizza il disclaimer al punto 8 della chain of thought. 
 
 6. **Selezione Alimenti**:
-  - Utilizzo della base dati:
-    - Utilizza esclusivamente gli alimenti presenti nel file "Valori Nutrizionali Crudo".
-    - Se il cliente richiede esplicitamente alimenti non presenti nel file, puoi utilizzare la tua conoscenza pregressa.
-    - Le informazioni nutrizionali (calorie e macro-nutrienti) devono sempre considerare l'alimento a crudo.
-    - Per alimenti con guscio (noci, mandorle, ecc.), considera sempre il peso senza guscio e specifica questo aspetto al cliente.
+ - Le informazioni nutrizionali (calorie e macro-nutrienti) devono sempre considerare l'alimento a crudo.
+ - Per alimenti con guscio (noci, mandorle, ecc.), considera sempre il peso senza guscio e specifica questo aspetto al cliente.
   
 7. **Verifica e Controllo Totali Nutrizionali**:
-  -  Calcolare totali nutrizionali giornalieri (Kcal, Grassi, Proteine, Carboidrati).
-  -  Confrontare con target cliente:
-    -  Kcal: {{customer_kcal}}
-    -  Grassi: {{customer_fats}}
-    -  Proteine: {{customer_proteins}}
-    -  Carboidrati: {{customer_carbs}}
-  - Accettare differenze percentuali entro il 10%, piccoli aggiustamenti quantitativi sono consentiti se necessario.
+  -  Calcolare totali nutrizionali giornalieri sommando i valori nutrizionali (in Kcal, Grassi, Proteine e Carboidrati) degli alimenti inseriti nella dieta giornaliera.
+  -  Si desidera che la somma dei valori nutrizionali dei pasti sia uguale ai target del cliente in modo che:
+    -  Kcal: {{customer_kcal}} = somma dei kcal dei pasti
+    -  Grassi: {{customer_fats}} = somma dei grassi dei pasti
+    -  Proteine: {{customer_proteins}} = somma delle proteine dei pasti
+    -  Carboidrati: {{customer_carbs}} = somma dei carboidrati dei pasti
+  - Accettare differenze percentuali entro il 2-3%, piccoli aggiustamenti quantitativi sono consentiti se necessario.
+  - Se le differenze superano il 2-3% tornare al punto 6 e variare gli alimenti per ottenere il risultato desiderato.
 
 8. **Linee Guida per Tutti gli Utenti (da includere sempre)**:
    - Acqua: Peso corporeo × 32,5 ml/giorno (+ 1 litro per sport o caldo).
