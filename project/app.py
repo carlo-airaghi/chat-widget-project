@@ -42,7 +42,7 @@ with prompt_template_path.open("r", encoding="utf-8") as f:
     prompt_template = f.read()
 
 # Create the pipelines with the appropriate model names and document stores.
-diet_pipeline = create_pipeline(diet_prompt_template, Config.OPENAI_API_KEY, diet_document_store, model_name="o3-mini")
+diet_pipeline = create_pipeline(diet_prompt_template, Config.OPENAI_API_KEY, diet_document_store, model_name="o3-mini") #o3-mini
 final_pipeline = create_pipeline(prompt_template, Config.OPENAI_API_KEY, general_document_store, model_name="gpt-4o-mini")
 
 # Initialize the conversation manager.
