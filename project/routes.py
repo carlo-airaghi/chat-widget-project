@@ -10,7 +10,7 @@ def create_blueprint(pipeline, conversation_manager):
         question = data.get('message', '')
         user_data = data.get('user', {})
 
-        # Extract customer fields.
+        # Estrai tutti i campi dal payload
         customer_id = user_data.get('Customer_ID') or None
         customer_name = user_data.get('Name') or ''
         customer_surname = user_data.get('Surname') or ''
@@ -45,7 +45,7 @@ def create_blueprint(pipeline, conversation_manager):
         if not question:
             return jsonify({'reply': 'Please provide a message.'}), 400
 
-        # Add user's message to the conversation history.
+        # Aggiungi il messaggio dell'utente alla cronologia
         conversation_manager.add_message(customer_id, "user", question)
         recent_messages = conversation_manager.get_history(customer_id)
 
@@ -70,12 +70,24 @@ def create_blueprint(pipeline, conversation_manager):
                     "customer_proteins": customer_proteins,
                     "customer_carbs": customer_carbs,
                     "customer_diet_type": customer_diet_type,
+                    "customer_macroblocco": customer_macroblocco,
+                    "customer_week": customer_week,
+                    "customer_day": customer_day,
+                    "customer_exercise_selected": customer_exercise_selected,
+                    "customer_country": customer_country,
+                    "customer_city": customer_city,
+                    "customer_province": customer_province,
+                    "customer_sub_expire": customer_sub_expire,
+                    "customer_sub_type": customer_sub_type,
+                    "customer_settimana_test_esercizi": customer_settimana_test_esercizi,
+                    "customer_settimana_test_pesi": customer_settimana_test_pesi,
+                    "customer_workout_della_settimna": customer_workout_della_settimna,
                     "conversation_history": recent_messages
                 }
             })
             reply = results["llm"]["replies"][0]
 
-            # Add the  reply to the conversation history.
+            # Aggiungi la risposta alla cronologia
             conversation_manager.add_message(customer_id, "assistant", reply)
             return jsonify({'reply': reply})
         except Exception as e:
