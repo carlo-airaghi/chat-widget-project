@@ -1,4 +1,3 @@
-- go back to the two models code 
 - for i da 1 a 3
     - llm1 
         - the first model 4o judges if the model required a diet

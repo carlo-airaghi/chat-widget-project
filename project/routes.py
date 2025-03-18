@@ -1,7 +1,7 @@
 # routes.py
 from flask import Blueprint, request, jsonify, current_app, send_from_directory
 
-def create_blueprint(pipeline, conversation_manager):
+def create_blueprint(diet_pipeline, final_pipeline, conversation_manager):
     chat_bp = Blueprint('chat_bp', __name__)
 
     @chat_bp.route('/chat', methods=['POST'])
@@ -10,7 +10,7 @@ def create_blueprint(pipeline, conversation_manager):
         question = data.get('message', '')
         user_data = data.get('user', {})
 
-        # Estrai tutti i campi dal payload
+        # Extract customer fields.
         customer_id = user_data.get('Customer_ID') or None
         customer_name = user_data.get('Name') or ''
         customer_surname = user_data.get('Surname') or ''
@@ -45,15 +45,44 @@ def create_blueprint(pipeline, conversation_manager):
         if not question:
             return jsonify({'reply': 'Please provide a message.'}), 400
 
-        # Aggiungi il messaggio dell'utente alla cronologia
+        # Add user's message to the conversation history.
         conversation_manager.add_message(customer_id, "user", question)
         recent_messages = conversation_manager.get_history(customer_id)
 
         try:
-            results = pipeline.run({
+            # First, call the diet pipeline (o3-mini).
+            # It will return either a detailed diet response or "la domanda del cliente non riguarda la dieta".
+            diet_results = diet_pipeline.run({
                 "retriever": {"query": question},
                 "prompt_builder": {
                     "question": question,
+                    "customer_id": customer_id,
+                    "customer_name": customer_name,
+                    "customer_surname": customer_surname,
+                    "customer_age": customer_age,
+                    "customer_sesso": customer_sesso,
+                    "customer_weight": customer_weight,
+                    "customer_height": customer_height,
+                    "customer_distretto_carente1": customer_distretto_carente1,
+                    "customer_distretto_carente2": customer_distretto_carente2,
+                    "customer_percentuale_massa_grassa": customer_percentuale_massa_grassa,
+                    "customer_dispendio_calorico": customer_dispendio_calorico,
+                    "customer_kcal": customer_kcal,
+                    "customer_fats": customer_fats,
+                    "customer_proteins": customer_proteins,
+                    "customer_carbs": customer_carbs,
+                    "customer_diet_type": customer_diet_type,
+                    "conversation_history": recent_messages
+                }
+            })
+            diet_reply = diet_results["llm"]["replies"][0]
+
+            # Now, call the final pipeline (GPT‑4) using both the original request and the diet output.
+            final_results = final_pipeline.run({
+                "retriever": {"query": question},
+                "prompt_builder": {
+                    "question": question,
+                    "diet_reply": diet_reply,  # Pass the diet pipeline output.
                     "customer_id": customer_id,
                     "customer_name": customer_name,
                     "customer_surname": customer_surname,
@@ -85,11 +114,11 @@ def create_blueprint(pipeline, conversation_manager):
                     "conversation_history": recent_messages
                 }
             })
-            reply = results["llm"]["replies"][0]
+            final_reply = final_results["llm"]["replies"][0]
 
-            # Aggiungi la risposta alla cronologia
-            conversation_manager.add_message(customer_id, "assistant", reply)
-            return jsonify({'reply': reply})
+            # Add the final reply to the conversation history.
+            conversation_manager.add_message(customer_id, "assistant", final_reply)
+            return jsonify({'reply': final_reply})
         except Exception as e:
             current_app.logger.error("Error in /chat endpoint", exc_info=True)
             return jsonify({'reply': 'Sorry, an error occurred. Please try again later.'}), 500

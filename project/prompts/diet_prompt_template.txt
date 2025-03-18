@@ -98,4 +98,4 @@ I seguenti documenti contengono le informazioni necessarie:
 {{question}}
 
 ======================================================================
-## RISPONDI SEMPRE CON IL CONTENUTO DI {{diet_reply}} E IN AGGIUNTA LA LETTERA "B" NULLA DI PIU NULLA DI MENO
+## RISPONDI SEMPRE CON LA LETTERA "A" NULLA DI PIU NULLA DI MENO
