@@ -4,13 +4,7 @@ class ConversationManager:
     Manages conversation histories in memory.
     """
     def __init__(self):
-        self.histories = {}
-    
-    def safe_float_water_requirement(s):
-        try:
-            return round(float(s) * 32.5 /1000,1)
-        except (ValueError, TypeError):
-            return 'Unknown'  
+        self.histories = {}  
 
 
     def add_message(self, customer_id, role, message, max_history=10):
@@ -25,3 +19,9 @@ class ConversationManager:
 
     def delete_history(self, customer_id):
         return self.histories.pop(customer_id, None)
+
+def safe_float_water_requirement(s):
+    try:
+        return round(float(s) * 32.5 /1000,1)
+    except (ValueError, TypeError):
+        return 'Unknown' 

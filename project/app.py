@@ -35,7 +35,7 @@ with prompt_template_path.open("r", encoding="utf-8") as f:
     prompt_template = f.read()
 
 # Create the pipelines with the appropriate model names and document stores.
-pipeline = create_pipeline(prompt_template, Config.OPENAI_API_KEY, document_store, model_name="gpt-4o") 
+pipeline = create_pipeline(prompt_template, Config.OPENAI_API_KEY, document_store, model_name="gpt-4o-mini") 
 
 # Initialize the conversation manager.
 conversation_manager = ConversationManager()
