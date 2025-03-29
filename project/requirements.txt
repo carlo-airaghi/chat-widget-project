@@ -3,3 +3,4 @@ openai
 Flask-Cors
 haystack-ai
 pypdf
+tiktoken
