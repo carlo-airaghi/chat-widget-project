@@ -85,7 +85,7 @@ def create_blueprint(pipeline, conversation_manager):
                     "conversation_history": recent_messages
                 }
             })
-            reply = results["llm"]["replies"][0]
+            reply = results["token_logger"]["replies"][0]
             conversation_manager.add_message(customer_id, "assistant", reply)
             return jsonify({'reply': reply})
         except Exception as e:
