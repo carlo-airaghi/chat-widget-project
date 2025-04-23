@@ -1,8 +1,0 @@
-- for i da 1 a 3
-    - llm1 
-        - the first model 4o judges if the model required a diet
-        - if yes then diet = 1 alse 0
-        - if yes then it produces a json with the diet
-    - if diet = 0 then close the loop else tool for doing sums and output is return as input of the llm1
-
-    - llm2 gpt replies to other questions 

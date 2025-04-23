@@ -1,7 +1,8 @@
+import logging
+from pathlib import Path
+
 from flask import Flask
 from flask_cors import CORS
-from pathlib import Path
-import logging
 
 from config import Config
 from indexers import index_pdf_documents, index_csv_documents
@@ -10,37 +11,41 @@ from utils import ConversationManager
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 from routes import create_blueprint
 
-# Initialize logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# ——— Logging ——————————————————————————————
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-# Create the Flask app and configure it.
+# ——— Flask App Setup —————————————————————————
 app = Flask(__name__, static_folder=Config.STATIC_FOLDER)
 app.config.from_object(Config)
 CORS(app)
 
-# Create an in-memory document store.
+# ——— Document Store & Indexing ————————————————————
 document_store = InMemoryDocumentStore()
-
-# Index documents from the specific folders.
 index_pdf_documents(Config.DOCUMENTS_FOLDER, document_store)
 index_csv_documents(Config.DOCUMENTS_FOLDER, document_store)
 
-# Read prompt template from file.
-prompts_folder = Config.PROMPTS_FOLDER
+# ——— Prompt Template ————————————————————————
+prompts_folder       = Config.PROMPTS_FOLDER
 prompt_template_path = prompts_folder / "prompt_template.txt"
-
 with prompt_template_path.open("r", encoding="utf-8") as f:
     prompt_template = f.read()
 
-# Create the pipeline.
-pipeline = create_pipeline(prompt_template, Config.OPENAI_API_KEY, document_store, model_name="gpt-4o")
+# ——— Pipeline (using DeepSeek Reasoner) ——————————
+pipeline = create_pipeline(
+    prompt_template,
+    Config.OPENAI_API_KEY,           # now your DeepSeek key
+    document_store,
+    model_name="deepseek-chat"   # switch to DeepSeek’s reasoning model
+)
 
-# Initialize the conversation manager.
+# ——— Conversation Manager & Routes ——————————————
 conversation_manager = ConversationManager()
-
-# Register the Blueprint.
 chat_bp = create_blueprint(pipeline, conversation_manager)
 app.register_blueprint(chat_bp)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+# ——— Run —————————————————————————————————————
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
