@@ -1,3 +1,5 @@
+# app.py
+import os
 import logging
 from pathlib import Path
 
@@ -11,41 +13,42 @@ from utils import ConversationManager
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 from routes import create_blueprint
 
-# ——— Logging ——————————————————————————————
+# ——— Logging ————————————————————————————
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# ——— Flask App Setup —————————————————————————
+# ——— Flask App Setup —————————————————————
 app = Flask(__name__, static_folder=Config.STATIC_FOLDER)
 app.config.from_object(Config)
 CORS(app)
 
-# ——— Document Store & Indexing ————————————————————
+# ——— Document Store & Indexing ——————————————————
 document_store = InMemoryDocumentStore()
 index_pdf_documents(Config.DOCUMENTS_FOLDER, document_store)
 index_csv_documents(Config.DOCUMENTS_FOLDER, document_store)
 
-# ——— Prompt Template ————————————————————————
-prompts_folder       = Config.PROMPTS_FOLDER
-prompt_template_path = prompts_folder / "prompt_template.txt"
+# ——— Prompt Template ——————————————————————
+prompt_template_path = Config.PROMPTS_FOLDER / "prompt_template.txt"
 with prompt_template_path.open("r", encoding="utf-8") as f:
     prompt_template = f.read()
 
-# ——— Pipeline (using DeepSeek Reasoner) ——————————
+# ——— Pipeline ———————————————————————————
 pipeline = create_pipeline(
     prompt_template,
-    Config.OPENAI_API_KEY,           # now your DeepSeek key
+    Config.OPENAI_API_KEY,
     document_store,
-    model_name="deepseek-chat"   # switch to DeepSeek’s reasoning model
+    model_name=Config.OPENAI_MODEL
 )
 
-# ——— Conversation Manager & Routes ——————————————
+# ——— Conversation Manager & Routes ——————————
 conversation_manager = ConversationManager()
 chat_bp = create_blueprint(pipeline, conversation_manager)
 app.register_blueprint(chat_bp)
 
-# ——— Run —————————————————————————————————————
+# ——— Run —————————————————————————————
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host=host, port=port)

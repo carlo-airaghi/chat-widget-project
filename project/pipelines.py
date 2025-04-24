@@ -1,3 +1,4 @@
+# pipeline.py
 import tiktoken
 import logging
 from typing import List, Dict, Any
@@ -37,14 +38,14 @@ class LenientPromptBuilder(PromptBuilder):
         return super().build_prompt(**filtered)
 
 def create_pipeline(prompt_template: str, api_key: str, document_store, model_name: str):
-    retriever     = InMemoryBM25Retriever(document_store=document_store)
-    prompt_builder= LenientPromptBuilder(template=prompt_template)
+    retriever      = InMemoryBM25Retriever(document_store=document_store)
+    prompt_builder = LenientPromptBuilder(template=prompt_template)
     llm = OpenAIGenerator(
         api_key      = Secret.from_token(api_key),
         model        = model_name,
-        api_base_url = Config.OPENAI_API_BASE_URL,    # ← point at DeepSeek
+        api_base_url = Config.OPENAI_API_BASE_URL,
     )
-    token_logger  = TokenLogger()
+    token_logger   = TokenLogger()
 
     pipe = Pipeline()
     pipe.add_component("retriever",      retriever)
