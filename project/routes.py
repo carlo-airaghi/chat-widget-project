@@ -1,112 +1,137 @@
-from flask import Blueprint, request, jsonify, current_app, send_from_directory
-from utils import safe_float_water_requirement
+import json
+import logging
+from pathlib import Path
 
-def create_blueprint(pipeline, conversation_manager):
-    chat_bp = Blueprint('chat_bp', __name__)
+from flask import Blueprint, request, jsonify, send_from_directory
+from jinja2 import Template
+from openai import OpenAIError
 
-    @chat_bp.route('/chat', methods=['POST'])
+from utils import safe_float_water_requirement, log_openai_usage
+
+# ------------------------------------------------------------------------
+
+def render_prompt(template_path: Path, **vars):
+    """Loads the Jinja‑style template and fills it with vars."""
+    with template_path.open(encoding="utf-8") as f:
+        tmpl = Template(f.read())
+    return tmpl.render(**vars)
+
+# ------------------------------------------------------------------------
+
+def create_blueprint(openai_client, conversation_manager, cfg):
+    """
+    Factory receives the already‑loaded app.config (cfg),
+    so we never touch flask.current_app during import.
+    """
+    chat_bp = Blueprint("chat_bp", __name__)
+
+    # ———————————————————————————————————————————————————————————
+    @chat_bp.route("/chat", methods=["POST"])
     def chat():
-        data = request.get_json()
-        question = data.get('message', '')
-        user_data = data.get('user', {})
+        data      = request.get_json() or {}
+        question  = (data.get("message") or "").strip()
+        user_data = data.get("user", {}) or {}
 
-        customer_id = user_data.get('Customer_ID') or None
-        customer_name = user_data.get('Name') or ''
-        customer_surname = user_data.get('Surname') or ''
-        customer_age = user_data.get('Age') or ''
-        customer_sesso = user_data.get('Sesso') or ''
-        customer_weight = user_data.get('Weight') or ''
-        customer_height = user_data.get('Height') or ''
-        water_requirement = safe_float_water_requirement(customer_weight)
-        customer_percentuale_massa_grassa = user_data.get('PercentualeMassaGrassa') or ''
-        customer_dispendio_calorico = user_data.get('DispendioCalorico') or ''
-        customer_diet_type = user_data.get('DietType') or ''
-        customer_macroblocco = user_data.get('Macroblocco') or ''
-        customer_week = user_data.get('Week') or ''
-        customer_day = user_data.get('Day') or ''
-        customer_exercise_selected = user_data.get('ExerciseSelected') or ''
-        customer_country = user_data.get('Country') or ''
-        customer_city = user_data.get('City') or ''
-        customer_province = user_data.get('Province') or ''
-        customer_sub_expire = user_data.get('subExpire') or ''
-        customer_sub_type = user_data.get('SubType') or ''
-        customer_kcal = user_data.get('Kcal') or ''
-        customer_fats = user_data.get('Fats') or ''
-        customer_proteins = user_data.get('Proteins') or ''
-        customer_carbs = user_data.get('Carbs') or ''
-        customer_settimana_test_esercizi = user_data.get('SettimanaTestEsercizi') or ''
-        customer_settimana_test_pesi = user_data.get('SettimanaTestPesi') or ''
-        customer_workout_della_settimna = user_data.get('WorkoutDellaSettimna') or {}
-        customer_distretto_carente1 = user_data.get('customerDistrettoCarente1') or ''
-        customer_distretto_carente2 = user_data.get('customerDistrettoCarente2') or ''
-
+        customer_id = user_data.get("Customer_ID")
         if not customer_id:
-            return jsonify({'reply': 'Please provide a valid Customer_ID.'}), 400
+            return jsonify({"reply": "Please provide a valid Customer_ID."}), 400
         if not question:
-            return jsonify({'reply': 'Please provide a message.'}), 400
+            return jsonify({"reply": "Please provide a message."}), 400
 
-        conversation_manager.add_message(customer_id, "user", question)
-        recent_messages = conversation_manager.get_history(customer_id)
+        # ---- Render system prompt ----------------------------------------
+        prompt_vars = {
+            "question":                    question,
+            "customer_id":                 customer_id,
+            "customer_name":               user_data.get("Name", ""),
+            "customer_surname":            user_data.get("Surname", ""),
+            "customer_age":                user_data.get("Age", ""),
+            "customer_sesso":              user_data.get("Sesso", ""),
+            "customer_weight":             user_data.get("Weight", ""),
+            "customer_height":             user_data.get("Height", ""),
+            "customer_water_requirement":  safe_float_water_requirement(user_data.get("Weight")),
+            "customer_distretto_carente1": user_data.get("customerDistrettoCarente1", ""),
+            "customer_distretto_carente2": user_data.get("customerDistrettoCarente2", ""),
+            "customer_percentuale_massa_grassa": user_data.get("PercentualeMassaGrassa", ""),
+            "customer_dispendio_calorico": user_data.get("DispendioCalorico", ""),
+            "customer_kcal":               user_data.get("Kcal", ""),
+            "customer_fats":               user_data.get("Fats", ""),
+            "customer_proteins":           user_data.get("Proteins", ""),
+            "customer_carbs":              user_data.get("Carbs", ""),
+            "customer_diet_type":          user_data.get("DietType", ""),
+            "customer_macroblocco":        user_data.get("Macroblocco", ""),
+            "customer_week":               user_data.get("Week", ""),
+            "customer_day":                user_data.get("Day", ""),
+            "customer_exercise_selected":  user_data.get("ExerciseSelected", ""),
+            "customer_country":            user_data.get("Country", ""),
+            "customer_city":               user_data.get("City", ""),
+            "customer_province":           user_data.get("Province", ""),
+            "customer_sub_expire":         user_data.get("subExpire", ""),
+            "customer_sub_type":           user_data.get("SubType", ""),
+            "customer_settimana_test_esercizi": user_data.get("SettimanaTestEsercizi", ""),
+            "customer_settimana_test_pesi":     user_data.get("SettimanaTestPesi", ""),
+            "customer_workout_della_settimna":  json.dumps(user_data.get("WorkoutDellaSettimna", {}), ensure_ascii=False),
+            "conversation_history":        conversation_manager.get_history(customer_id),
+        }
+
+        sys_prompt = render_prompt(
+            Path(cfg["PROMPTS_FOLDER"]) / "prompt_template.txt",
+            **prompt_vars
+        )
+
+        # ---- Build messages & tools --------------------------------------
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            *conversation_manager.get_history(customer_id),
+            {"role": "user", "content": question},
+        ]
+
+        tools = []
+        if cfg["OPENAI_VECTOR_STORE_ID"]:
+            tools.append({
+                "type": "file_search",
+                "vector_store_ids": [cfg["OPENAI_VECTOR_STORE_ID"]],
+            })
 
         try:
-            results = pipeline.run({
-                "retriever": {"query": question},
-                "prompt_builder": {
-                    "question": question,
-                    "customer_id": customer_id,
-                    "customer_name": customer_name,
-                    "customer_surname": customer_surname,
-                    "customer_age": customer_age,
-                    "customer_sesso": customer_sesso,
-                    "customer_weight": customer_weight,
-                    "customer_height": customer_height,
-                    "customer_water_requirement": water_requirement,
-                    "customer_distretto_carente1": customer_distretto_carente1,
-                    "customer_distretto_carente2": customer_distretto_carente2,
-                    "customer_percentuale_massa_grassa": customer_percentuale_massa_grassa,
-                    "customer_dispendio_calorico": customer_dispendio_calorico,
-                    "customer_kcal": customer_kcal,
-                    "customer_fats": customer_fats,
-                    "customer_proteins": customer_proteins,
-                    "customer_carbs": customer_carbs,
-                    "customer_diet_type": customer_diet_type,
-                    "customer_macroblocco": customer_macroblocco,
-                    "customer_week": customer_week,
-                    "customer_day": customer_day,
-                    "customer_exercise_selected": customer_exercise_selected,
-                    "customer_country": customer_country,
-                    "customer_city": customer_city,
-                    "customer_province": customer_province,
-                    "customer_sub_expire": customer_sub_expire,
-                    "customer_sub_type": customer_sub_type,
-                    "customer_settimana_test_esercizi": customer_settimana_test_esercizi,
-                    "customer_settimana_test_pesi": customer_settimana_test_pesi,
-                    "customer_workout_della_settimna": customer_workout_della_settimna,
-                    "conversation_history": recent_messages
-                }
-            })
-            reply = results["token_logger"]["replies"][0]
+            response = openai_client.chat.completions.create(
+                model       = cfg["OPENAI_MODEL"],
+                messages    = messages,
+                tools       = tools or None,
+                temperature = 1.0,
+                max_tokens  = 2048,
+                top_p       = 1.0,
+            )
+            reply = response.choices[0].message.content.strip()
             conversation_manager.add_message(customer_id, "assistant", reply)
-            return jsonify({'reply': reply})
+
+            log_openai_usage(response)
+            return jsonify({"reply": reply})
+        except OpenAIError as e:
+            logging.error("OpenAI API error: %s", e, exc_info=True)
+            return jsonify({"reply": "OpenAI error, please try again later."}), 502
         except Exception as e:
-            current_app.logger.error("Error in /chat endpoint", exc_info=True)
-            return jsonify({'reply': 'Sorry, an error occurred. Please try again later.'}), 500
+            logging.error("Unhandled error in /chat: %s", e, exc_info=True)
+            return jsonify({"reply": "Sorry, an error occurred. Please try again later."}), 500
 
-    @chat_bp.route('/history/<customer_id>', methods=['GET'])
+    # ———————————————————————————————————————————————————————————
+    @chat_bp.route("/history/<customer_id>", methods=["GET"])
     def get_conversation_history(customer_id):
-        history = conversation_manager.get_history(customer_id)
-        return jsonify({"history": history}), 200
+        return jsonify({"history": conversation_manager.get_history(customer_id)}), 200
 
-    @chat_bp.route('/deleteHistory/<customer_id>', methods=['DELETE'])
+    @chat_bp.route("/deleteHistory/<customer_id>", methods=["DELETE"])
     def delete_history(customer_id):
         if conversation_manager.delete_history(customer_id) is not None:
             return jsonify({"success": True, "message": "Conversation history deleted."}), 200
-        else:
-            return jsonify({"success": False, "message": "No conversation history found for this user."}), 404
+        return jsonify({"success": False, "message": "No conversation history found for this user."}), 404
 
-    @chat_bp.route('/static/<path:filename>')
+    # Static file helper
+    @chat_bp.route("/static/<path:filename>")
     def serve_static(filename):
-        static_folder = current_app.config.get('STATIC_FOLDER')
-        return send_from_directory(static_folder, filename)
+        return send_from_directory(cfg["STATIC_FOLDER"], filename)
+
+    # Optional healthcheck
+    @chat_bp.route("/health")
+    def health():
+        return "ok", 200
 
     return chat_bp

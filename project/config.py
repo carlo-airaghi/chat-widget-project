@@ -1,39 +1,24 @@
-# config.py
 import os
 from pathlib import Path
 
 class Config:
-    # Choose LLM provider: "openai" or "deepseek"
-    LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "openai").lower()
-
-    # API Key (same env var for both providers)
+    # ── OpenAI ────────────────────────────────────────────────────────────
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
     if not OPENAI_API_KEY:
-        raise ValueError("No OPENAI_API_KEY found in environment variables.")
+        raise ValueError("OPENAI_API_KEY env‑var is required")
 
-    # Base URL depends on provider
-    if LLM_PROVIDER == "deepseek":
-        OPENAI_API_BASE_URL = os.environ.get(
-            "OPENAI_API_BASE_URL",
-            "https://api.deepseek.com/v1"
-        )
-    else:
-        OPENAI_API_BASE_URL = os.environ.get(
-            "OPENAI_API_BASE_URL",
-            "https://api.openai.com/v1"
-        )
-
-    # Default model name, overridable via env var
-    OPENAI_MODEL = os.environ.get(
-        "OPENAI_MODEL",
-        "deepseek-chat" if LLM_PROVIDER == "deepseek" else "gpt-4o"
+    OPENAI_API_BASE_URL = os.environ.get(
+        "OPENAI_API_BASE_URL",
+        "https://api.openai.com/v1"
     )
 
-    # Cost constants
-    PROMPT_COST = 2.5 / 1_000_000
+    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
+    OPENAI_VECTOR_STORE_ID = os.environ.get("OPENAI_VECTOR_STORE_ID", "")
+
+    # ── Pricing (USD/token) ───────────────────────────────────────────────
+    PROMPT_COST = 2.5 / 1_000_000     # adjust for your plan / model
     OUTPUT_COST = 10  / 1_000_000
 
-    # Local folders
-    STATIC_FOLDER    = "static_theapeshape"
-    DOCUMENTS_FOLDER = Path(STATIC_FOLDER) / "documents"
-    PROMPTS_FOLDER   = Path("prompts")
+    # ── Local folders ─────────────────────────────────────────────────────
+    STATIC_FOLDER  = "static_theapeshape"
+    PROMPTS_FOLDER = Path("prompts")

@@ -1,7 +1,5 @@
 Flask
+flask-cors
 openai
-Flask-Cors
-haystack-ai
-pypdf
 tiktoken
-typing
+Jinja2
