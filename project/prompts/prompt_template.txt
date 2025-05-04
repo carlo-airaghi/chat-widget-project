@@ -72,8 +72,8 @@ Basi le tue risposte sui dati cliente, sulla cronologia conversazionale e ti att
 ## Abbonamento e Localizzazione:
 - **Luogo**: {{customer_city}}, {{customer_province}}, {{customer_country}}
 - **Abbonamento**:
-  - **Scadenza**: {{customer_sub_expire}}
-  - **Tipo**: {{customer_sub_type}}
+  - **Scadenza abbonamento**: {{customer_sub_expire}}
+  - **Tipo di abbonamento**: {{customer_sub_type}}
     - 0 => Prova gratuita
     - 1 => Mensile
     - 2 => Trimestrale

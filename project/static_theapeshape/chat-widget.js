@@ -29,7 +29,7 @@
   const customerCity = window.customerCity || '';
   const customerProvince = window.customerProvince || '';
   const customerSubExpire = window.customerSubExpire || '';
-  const customerSubType = window.customerSubType || null;
+  const customerSubType = window.customerSubType;
 
   // ======= NEW FIELDS =======
   const customerKcal = window.customerKcal || null;
