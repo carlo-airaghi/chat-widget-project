@@ -12,8 +12,8 @@ class Config:
         "https://api.openai.com/v1"
     )
 
-    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
-    OPENAI_VECTOR_STORE_ID = os.environ.get("OPENAI_VECTOR_STORE_ID", "")
+    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1")
+    OPENAI_VECTOR_STORE_ID = os.environ.get("OPENAI_VECTOR_STORE_ID", "vs_6817f09bb788819187424bbd5962ec86")
 
     # ── Pricing (USD/token) ───────────────────────────────────────────────
     PROMPT_COST = 2.5 / 1_000_000     # adjust for your plan / model
