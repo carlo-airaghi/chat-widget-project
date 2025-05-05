@@ -8,15 +8,27 @@ from openai import OpenAIError
 
 from utils import safe_float_water_requirement, log_openai_usage
 
-# ------------------------------------------------------------------------
 
+# ── Helpers ──────────────────────────────────────────────────────────────
 def render_prompt(template_path: Path, **vars):
     with template_path.open(encoding="utf-8") as f:
         tmpl = Template(f.read())
     return tmpl.render(**vars)
 
-# ------------------------------------------------------------------------
 
+def first_assistant_reply(response):
+    """
+    Iterate over response.output and return the first assistant message’s text.
+    Works whether or not the model used tools.
+    """
+    for item in response.output:
+        if getattr(item, "role", None) == "assistant" and hasattr(item, "content"):
+            # content is always a list (assistant can stream multiple blocks)
+            return item.content[0].text
+    return None
+
+
+# ── Blueprint factory ────────────────────────────────────────────────────
 def create_blueprint(openai_client, conversation_manager, cfg):
     chat_bp = Blueprint("chat_bp", __name__)
 
@@ -88,19 +100,31 @@ def create_blueprint(openai_client, conversation_manager, cfg):
 
         try:
             response = openai_client.responses.create(
-                model       = cfg["OPENAI_MODEL"],
-                input       = messages,
-                tools       = tools,     
-                temperature = 1.0,
+                model              = cfg["OPENAI_MODEL"],
+                input              = messages,
+                tools              = tools,
+                temperature        = 1.0,
                 max_output_tokens  = 2048,
-                top_p       = 1.0,
-                store=True,
+                top_p              = 1.0,
+                store              = True,
             )
-            reply = response.output[0].content[0].text
+
+            # Full JSON‑serialisable dump for your Docker logs
+            logging.info("Full OpenAI response: %s", response.model_dump())
+
+            reply = first_assistant_reply(response)
+            if reply is None:
+                logging.error("No assistant reply found in OpenAI response!")
+                return jsonify({"reply": "Sorry, I didn’t receive a valid answer."}), 502
+
+            # Persist in conversation history
             conversation_manager.add_message(customer_id, "assistant", reply)
 
+            # Log token usage
             log_openai_usage(response)
+
             return jsonify({"reply": reply})
+
         except OpenAIError as e:
             logging.error("OpenAI API error: %s", e, exc_info=True)
             return jsonify({"reply": "OpenAI error, please try again later."}), 502
