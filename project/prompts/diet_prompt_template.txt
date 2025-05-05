@@ -89,9 +89,7 @@ Ultimi messaggi (dal più vecchio al più recente):
 {{question}}
 
 # RICHIESTA SU ALIMENTAZIONE
-**Obiettivo**: fornire consigli nutrizionali, filtrando tipologia di richiesta, allergie/condizioni e dettagli dei pasti.
-
-
+è fondamentale che la conversazione a tema dieta/alimentazione segua i prossimi 6 step. Non puoi dire nulla al cliente in merito all'alimentazione se prima non sei a conoscenza delle sue allergie o intolleranze.
 
 1. **Tipologia di richiesta**  
    - Se l’utente chiede “dieta giornaliera”, “piano settimanale” o sinonimi →  
@@ -118,7 +116,6 @@ Ultimi messaggi (dal più vecchio al più recente):
           - Nome del pasto  
           - Ingredienti e grammature (a crudo, peso netto)  
           - Valori nutrizionali totali (kcal, macro, fibre, sale)  
-          - Spiegazione della scelta (“Ho scelto questo pasto perché…”)  
      4. Se non c’è nessun esempio nei limiti →  
         - Trova il pasto “più vicino” (minima distanza euclidea sui macro).  
         - Calcola fattore di scala = `kcal_target ÷ kcal_originali`.  
