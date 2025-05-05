@@ -3,21 +3,25 @@ from pathlib import Path
 
 class Config:
     # ── OpenAI ────────────────────────────────────────────────────────────
-    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY env‑var is required")
 
-    OPENAI_API_BASE_URL = os.environ.get(
+    OPENAI_API_BASE_URL = os.getenv(
         "OPENAI_API_BASE_URL",
         "https://api.openai.com/v1"
     )
 
-    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1")
-    OPENAI_VECTOR_STORE_ID = os.environ.get("OPENAI_VECTOR_STORE_ID", "vs_6817f09bb788819187424bbd5962ec86")
+    # Vector‑store obbligatorio
+    OPENAI_VECTOR_STORE_ID = os.getenv("OPENAI_VECTOR_STORE_ID")
+    if not OPENAI_VECTOR_STORE_ID:
+        raise ValueError("OPENAI_VECTOR_STORE_ID env‑var is required")
+
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     # ── Pricing (USD/token) ───────────────────────────────────────────────
-    PROMPT_COST = 2.5 / 1_000_000     # adjust for your plan / model
-    OUTPUT_COST = 10  / 1_000_000
+    PROMPT_COST  = 2.5 / 1_000_000
+    OUTPUT_COST  = 10  / 1_000_000
 
     # ── Local folders ─────────────────────────────────────────────────────
     STATIC_FOLDER  = "static_theapeshape"

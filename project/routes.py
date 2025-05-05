@@ -11,7 +11,6 @@ from utils import safe_float_water_requirement, log_openai_usage
 # ------------------------------------------------------------------------
 
 def render_prompt(template_path: Path, **vars):
-    """Loads the Jinja‑style template and fills it with vars."""
     with template_path.open(encoding="utf-8") as f:
         tmpl = Template(f.read())
     return tmpl.render(**vars)
@@ -19,13 +18,9 @@ def render_prompt(template_path: Path, **vars):
 # ------------------------------------------------------------------------
 
 def create_blueprint(openai_client, conversation_manager, cfg):
-    """
-    Factory receives the already‑loaded app.config (cfg),
-    so we never touch flask.current_app during import.
-    """
     chat_bp = Blueprint("chat_bp", __name__)
 
-    # ———————————————————————————————————————————————————————————
+    # ─────────────────────────────────────────────────────────────────────
     @chat_bp.route("/chat", methods=["POST"])
     def chat():
         data      = request.get_json() or {}
@@ -38,7 +33,7 @@ def create_blueprint(openai_client, conversation_manager, cfg):
         if not question:
             return jsonify({"reply": "Please provide a message."}), 400
 
-        # ---- Render system prompt ----------------------------------------
+        # ---- Render system prompt --------------------------------------
         prompt_vars = {
             "question":                    question,
             "customer_id":                 customer_id,
@@ -78,30 +73,30 @@ def create_blueprint(openai_client, conversation_manager, cfg):
             **prompt_vars
         )
 
-        # ---- Build messages & tools --------------------------------------
+        # ---- Build messages --------------------------------------------
         messages = [
             {"role": "system", "content": sys_prompt},
             *conversation_manager.get_history(customer_id),
             {"role": "user", "content": question},
         ]
 
-        tools = []
-        if cfg["OPENAI_VECTOR_STORE_ID"]:
-            tools.append({
-                "type": "file_search",
-                "vector_store_ids": [cfg["OPENAI_VECTOR_STORE_ID"]],
-            })
+        # ---- File‑search tool & config ----------------------------------
+        tools = [{
+            "type": "file_search",
+            "vector_store_ids": [cfg["OPENAI_VECTOR_STORE_ID"]],
+        }]
 
         try:
-            response = openai_client.chat.completions.create(
+            response = openai_client.responses.create(
                 model       = cfg["OPENAI_MODEL"],
-                messages    = messages,
-                tools       = tools or None,
+                input       = messages,
+                tools       = tools,     
                 temperature = 1.0,
-                max_tokens  = 2048,
+                max_output_tokens  = 2048,
                 top_p       = 1.0,
+                store=True,
             )
-            reply = response.choices[0].message.content.strip()
+            reply = response.output[0].content[0].text
             conversation_manager.add_message(customer_id, "assistant", reply)
 
             log_openai_usage(response)
@@ -113,7 +108,7 @@ def create_blueprint(openai_client, conversation_manager, cfg):
             logging.error("Unhandled error in /chat: %s", e, exc_info=True)
             return jsonify({"reply": "Sorry, an error occurred. Please try again later."}), 500
 
-    # ———————————————————————————————————————————————————————————
+    # ─────────────────────────────────────────────────────────────────────
     @chat_bp.route("/history/<customer_id>", methods=["GET"])
     def get_conversation_history(customer_id):
         return jsonify({"history": conversation_manager.get_history(customer_id)}), 200
@@ -129,7 +124,6 @@ def create_blueprint(openai_client, conversation_manager, cfg):
     def serve_static(filename):
         return send_from_directory(cfg["STATIC_FOLDER"], filename)
 
-    # Optional healthcheck
     @chat_bp.route("/health")
     def health():
         return "ok", 200

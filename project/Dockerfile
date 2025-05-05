@@ -4,6 +4,8 @@ FROM python:3.9-slim
 # Set the working directory in the container
 WORKDIR /app
 
+ENV OPENAI_VECTOR_STORE_ID=vs_6817f09bb788819187424bbd5962ec86
+
 # Copy requirements.txt first to leverage Docker cache
 COPY requirements.txt /app/
 
