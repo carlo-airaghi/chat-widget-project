@@ -36,6 +36,9 @@
   const customerFats = window.customerFats || null;
   const customerProteins = window.customerProteins || null;
   const customerCarbs = window.customerCarbs || null;
+  const customer_sugar = window.customer_sugar || null;
+  const customer_water_requirement = window.customer_water_requirement || null;
+  const customer_fiber = window.customer_fiber || null;
   const customerSettimanaTestEsercizi = window.customerSettimanaTestEsercizi || false;
   const customerSettimanaTestPesi = window.customerSettimanaTestPesi || false;
 
@@ -295,6 +298,9 @@
         Fats: customerFats,
         Proteins: customerProteins,
         Carbs: customerCarbs,
+        Sugar: customer_sugar,
+        Water: customer_water_requirement,
+        Fiber: customer_fiber,
         SettimanaTestEsercizi: customerSettimanaTestEsercizi,
         SettimanaTestPesi: customerSettimanaTestPesi,
 
