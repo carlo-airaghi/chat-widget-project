@@ -45,7 +45,13 @@ def create_blueprint(openai_client, conversation_manager, cfg):
         if not question:
             return jsonify({"reply": "Please provide a message."}), 400
 
-        # ---- Render system prompt --------------------------------------
+        # ── Persist the user turn *immediately* so it is part of history ──
+        conversation_manager.add_message(customer_id, "user", question)
+
+        # Grab the full history **including** this fresh user turn
+        full_history = conversation_manager.get_history(customer_id)
+
+        # ── Render the system prompt (template has access to history) ──
         prompt_vars = {
             "question":                    question,
             "customer_id":                 customer_id,
@@ -79,27 +85,27 @@ def create_blueprint(openai_client, conversation_manager, cfg):
             "customer_settimana_test_esercizi": user_data.get("SettimanaTestEsercizi", ""),
             "customer_settimana_test_pesi":     user_data.get("SettimanaTestPesi", ""),
             "customer_workout_della_settimna":  json.dumps(user_data.get("WorkoutDellaSettimna", {}), ensure_ascii=False),
-            "conversation_history":        conversation_manager.get_history(customer_id),
+            "conversation_history":        full_history,
         }
 
         sys_prompt = render_prompt(
             Path(cfg["PROMPTS_FOLDER"]) / "prompt_template.txt",
-            **prompt_vars
+            **prompt_vars,
         )
 
-        # ---- Build messages --------------------------------------------
+        # ── Assemble messages for the chat completion call ──────────────
         messages = [
             {"role": "system", "content": sys_prompt},
-            *conversation_manager.get_history(customer_id),
-            {"role": "user", "content": question},
+            *full_history,  # already contains the very last user turn
         ]
 
-        # ---- File‑search tool & config ----------------------------------
+        # Optional file-search tool
         tools = [{
             "type": "file_search",
             "vector_store_ids": [cfg["OPENAI_VECTOR_STORE_ID"]],
         }]
 
+        # ── Hit the OpenAI API ───────────────────────────────────────────
         try:
             response = openai_client.responses.create(
                 model              = cfg["OPENAI_MODEL"],
@@ -111,7 +117,6 @@ def create_blueprint(openai_client, conversation_manager, cfg):
                 store              = True,
             )
 
-            # Full JSON‑serialisable dump for your Docker logs
             logging.info("Full OpenAI response: %s", response.model_dump())
 
             reply = first_assistant_reply(response)
@@ -119,10 +124,10 @@ def create_blueprint(openai_client, conversation_manager, cfg):
                 logging.error("No assistant reply found in OpenAI response!")
                 return jsonify({"reply": "Sorry, I didn’t receive a valid answer."}), 502
 
-            # Persist in conversation history
+            # Persist assistant turn
             conversation_manager.add_message(customer_id, "assistant", reply)
 
-            # Log token usage
+            # Log usage (tokens & cost, if desired)
             log_openai_usage(response)
 
             return jsonify({"reply": reply})
@@ -134,7 +139,7 @@ def create_blueprint(openai_client, conversation_manager, cfg):
             logging.error("Unhandled error in /chat: %s", e, exc_info=True)
             return jsonify({"reply": "Sorry, an error occurred. Please try again later."}), 500
 
-    # ─────────────────────────────────────────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────
     @chat_bp.route("/history/<customer_id>", methods=["GET"])
     def get_conversation_history(customer_id):
         return jsonify({"history": conversation_manager.get_history(customer_id)}), 200
@@ -145,7 +150,7 @@ def create_blueprint(openai_client, conversation_manager, cfg):
             return jsonify({"success": True, "message": "Conversation history deleted."}), 200
         return jsonify({"success": False, "message": "No conversation history found for this user."}), 404
 
-    # Static file helper
+    # Static files helper
     @chat_bp.route("/static/<path:filename>")
     def serve_static(filename):
         return send_from_directory(cfg["STATIC_FOLDER"], filename)
