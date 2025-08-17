@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 
-from flask import Blueprint, request, jsonify, send_from_directory
+from flask import Blueprint, request, jsonify, send_from_directory, current_app
 from jinja2 import Template
 from openai import OpenAIError
 
@@ -35,11 +35,21 @@ def create_blueprint(openai_client, conversation_manager, cfg):
     # ─────────────────────────────────────────────────────────────────────
     @chat_bp.route("/chat", methods=["POST"])
     def chat():
-        data      = request.get_json() or {}
-        question  = (data.get("message") or "").strip()
+        # 1. Recupera l'intero payload JSON dal client
+        data = request.get_json(force=True) or {}
         user_data = data.get("user", {}) or {}
 
+        # 2. Logga tutti i campi ricevuti (verranno catturati da Docker nei log)
+        current_app.logger.info(
+            "Payload ricevuto dal client:\n%s",
+            json.dumps(data, indent=2, ensure_ascii=False)
+        )
+
+        # Estrai domanda e dati utente
+        question = (data.get("message") or "").strip()
         customer_id = user_data.get("Customer_ID")
+
+        # Validazioni di base
         if not customer_id:
             return jsonify({"reply": "Please provide a valid Customer_ID."}), 400
         if not question:
@@ -48,44 +58,47 @@ def create_blueprint(openai_client, conversation_manager, cfg):
         # ── Persist the user turn *immediately* so it is part of history ──
         conversation_manager.add_message(customer_id, "user", question)
 
-        # Grab the full history **including** this fresh user turn
+        # Ottieni la storia completa, inclusa la richiesta corrente
         full_history = conversation_manager.get_history(customer_id)
 
-        # ── Render the system prompt (template has access to history) ──
+        # ── Render del system prompt
         prompt_vars = {
-            "question":                    question,
-            "customer_id":                 customer_id,
-            "customer_name":               user_data.get("Name", ""),
-            "customer_surname":            user_data.get("Surname", ""),
-            "customer_age":                user_data.get("Age", ""),
-            "customer_sesso":              user_data.get("Sesso", ""),
-            "customer_weight":             user_data.get("Weight", ""),
-            "customer_height":             user_data.get("Height", ""),
+            "question": question,
+            "customer_id": customer_id,
+            "customer_name": user_data.get("Name", ""),
+            "customer_surname": user_data.get("Surname", ""),
+            "customer_age": user_data.get("Age", ""),
+            "customer_sesso": user_data.get("Sesso", ""),
+            "customer_weight": user_data.get("Weight", ""),
+            "customer_height": user_data.get("Height", ""),
             "customer_distretto_carente1": user_data.get("customerDistrettoCarente1", ""),
             "customer_distretto_carente2": user_data.get("customerDistrettoCarente2", ""),
             "customer_percentuale_massa_grassa": user_data.get("PercentualeMassaGrassa", ""),
             "customer_dispendio_calorico": user_data.get("DispendioCalorico", ""),
-            "customer_kcal":               user_data.get("Kcal", ""),
-            "customer_fats":               user_data.get("Fats", ""),
-            "customer_proteins":           user_data.get("Proteins", ""),
-            "customer_carbs":              user_data.get("Carbs", ""),
-            "customer_sugar":              user_data.get("Sugar", ""),
-            "customer_water_requirement":  user_data.get("Water", ""),
-            "customer_fiber":              user_data.get("Fiber", ""),
-            "customer_diet_type":          user_data.get("DietType", ""),
-            "customer_macroblocco":        user_data.get("Macroblocco", ""),
-            "customer_week":               user_data.get("Week", ""),
-            "customer_day":                user_data.get("Day", ""),
-            "customer_exercise_selected":  user_data.get("ExerciseSelected", ""),
-            "customer_country":            user_data.get("Country", ""),
-            "customer_city":               user_data.get("City", ""),
-            "customer_province":           user_data.get("Province", ""),
-            "customer_sub_expire":         user_data.get("subExpire", ""),
-            "customer_sub_type":           user_data.get("SubType", ""),
+            "customer_kcal": user_data.get("Kcal", ""),
+            "customer_fats": user_data.get("Fats", ""),
+            "customer_proteins": user_data.get("Proteins", ""),
+            "customer_carbs": user_data.get("Carbs", ""),
+            "customer_sugar": user_data.get("Sugar", ""),
+            "customer_water_requirement": user_data.get("Water", ""),
+            "customer_fiber": user_data.get("Fiber", ""),
+            "customer_diet_type": user_data.get("DietType", ""),
+            "customer_macroblocco": user_data.get("Macroblocco", ""),
+            "customer_week": user_data.get("Week", ""),
+            "customer_day": user_data.get("Day", ""),
+            "customer_exercise_selected": user_data.get("ExerciseSelected", ""),
+            "customer_country": user_data.get("Country", ""),
+            "customer_city": user_data.get("City", ""),
+            "customer_province": user_data.get("Province", ""),
+            "customer_sub_expire": user_data.get("subExpire", ""),
+            "customer_sub_type": user_data.get("SubType", ""),
             "customer_settimana_test_esercizi": user_data.get("SettimanaTestEsercizi", ""),
-            "customer_settimana_test_pesi":     user_data.get("SettimanaTestPesi", ""),
-            "customer_workout_della_settimna":  json.dumps(user_data.get("WorkoutDellaSettimna", {}), ensure_ascii=False),
-            "conversation_history":        full_history,
+            "customer_settimana_test_pesi": user_data.get("SettimanaTestPesi", ""),
+            "customer_specialisti": json.dumps(user_data.get("Specialisti", {}), ensure_ascii=False),
+            "customer_workout_della_settimna": json.dumps(
+                user_data.get("WorkoutDellaSettimna", {}), ensure_ascii=False
+            ),
+            "conversation_history": full_history,
         }
 
         sys_prompt = render_prompt(
@@ -93,28 +106,28 @@ def create_blueprint(openai_client, conversation_manager, cfg):
             **prompt_vars,
         )
 
-        # ── Assemble messages for the chat completion call ──────────────
+        # ── Assembla i messaggi per la chiamata all’API OpenAI ─────────────
         messages = [
-            {"role": "system", "content": sys_prompt},
-            *full_history,  # already contains the very last user turn
+            {"role": "system",  "content": sys_prompt},
+            *full_history,
         ]
 
-        # Optional file-search tool
+        # Tool facoltativo di ricerca file
         tools = [{
             "type": "file_search",
             "vector_store_ids": [cfg["OPENAI_VECTOR_STORE_ID"]],
         }]
 
-        # ── Hit the OpenAI API ───────────────────────────────────────────
+        # ── Chiamata all’API OpenAI ───────────────────────────────────────
         try:
             response = openai_client.responses.create(
-                model              = cfg["OPENAI_MODEL"],
-                input              = messages,
-                tools              = tools,
-                temperature        = 1.0,
-                max_output_tokens  = 2048,
-                top_p              = 1.0,
-                store              = True,
+                model             = cfg["OPENAI_MODEL"],
+                input             = messages,
+                tools             = tools,
+                temperature       = 1.0,
+                max_output_tokens = 2048,
+                top_p             = 1.0,
+                store             = True,
             )
 
             logging.info("Full OpenAI response: %s", response.model_dump())
@@ -127,7 +140,7 @@ def create_blueprint(openai_client, conversation_manager, cfg):
             # Persist assistant turn
             conversation_manager.add_message(customer_id, "assistant", reply)
 
-            # Log usage (tokens & cost, if desired)
+            # Log usage (tokens & cost)
             log_openai_usage(response)
 
             return jsonify({"reply": reply})
@@ -150,7 +163,6 @@ def create_blueprint(openai_client, conversation_manager, cfg):
             return jsonify({"success": True, "message": "Conversation history deleted."}), 200
         return jsonify({"success": False, "message": "No conversation history found for this user."}), 404
 
-    # Static files helper
     @chat_bp.route("/static/<path:filename>")
     def serve_static(filename):
         return send_from_directory(cfg["STATIC_FOLDER"], filename)

@@ -41,6 +41,7 @@
   const customer_fiber = window.customer_fiber || null;
   const customerSettimanaTestEsercizi = window.customerSettimanaTestEsercizi || false;
   const customerSettimanaTestPesi = window.customerSettimanaTestPesi || false;
+  const Specialisti = window.Specialisti || {};
 
   // NOTE: changed from customerWorkoutDellaSettimana to customerWorkoutDellaSettimna
   const customerWorkoutDellaSettimna = window.customerWorkoutDellaSettimna || {};
@@ -303,7 +304,7 @@
         Fiber: customer_fiber,
         SettimanaTestEsercizi: customerSettimanaTestEsercizi,
         SettimanaTestPesi: customerSettimanaTestPesi,
-
+        Specialisti: Specialisti,
         // Key renamed to match updated Python side
         WorkoutDellaSettimna: customerWorkoutDellaSettimna
       }
